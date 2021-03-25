@@ -1,4 +1,4 @@
-import lightboxComponent from './lightbox.vue'
+import lightboxComponent from './index.vue'
 
 const xqlightbox = {
     install: function (Vue) {  
