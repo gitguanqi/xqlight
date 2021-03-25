@@ -1,25 +1,3 @@
-# xqlight
-
-## use
-
-### install package
-
-```cmd
-npm install xqlight --save
-```
-
-### import package
-
-```js
-// main.js
-import xqlight from 'xqlight'
-
-Vue.use(xqlight);
-```
-
-### use on components
-
-```vue
 <template>
     <div>
         <ul class="imgs">
@@ -95,13 +73,3 @@ export default {
         height: 300px;
     }
 </style>
-```
-
-
-## issue
-
-[submit your question](https://github.com/gitguanqi/xqi18n/issues/new)
-
-## author
-
-[@gitguanqi](https://github.com/gitguanqi)
