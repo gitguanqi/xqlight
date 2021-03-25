@@ -39,6 +39,22 @@ export default {
                 {
                     id: 6,
                     src: '/img/a4.jpeg',
+                },
+                {
+                    id: 7,
+                    src: '/img/a3.jpeg',
+                },
+                {
+                    id: 8,
+                    src: '/img/a4.jpeg',
+                },
+                {
+                    id: 9,
+                    src: '/img/a4.jpeg',
+                },
+                {
+                    id: 10,
+                    src: '/img/a4.jpeg',
                 }
             ],
 
@@ -65,11 +81,14 @@ export default {
         padding: 0;
         list-style: none;
     }
+    .imgs {
+        text-align: left;
+    }
     .imgs li,
     .imgs img {
         margin: 5px;
         display: inline-block;
-        width: 400px;
-        height: 300px;
+        width: 300px;
+        height: 200px;
     }
 </style>
