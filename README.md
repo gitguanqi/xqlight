@@ -1,6 +1,55 @@
 # xqlight
 
-## use
+## use in browser
+
+### import cdn
+
+```html
+<!-- unkpg -->
+<script src="https://unpkg.com/xqlight/lib/js/xqlight.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/xqlight/lib/css/xqlight.min.css">
+```
+
+### use methods
+
+`imgCls` is the name of a picture frame class on the page.
+
+```html
+<h2>xqlight example</h2>
+<p>Below is a set of sample pictures, click on it and the lightbox effect will appear.</p>
+<ul class="imgs">
+    <li>
+        <img src="./img/a1.jpg" alt="">
+    </li>
+    <li>
+        <img src="./img/a2.jpeg" alt="">
+    </li>
+    <li>
+        <img src="./img/a3.jpeg" alt="">
+    </li>
+    <li>
+        <img src="./img/a4.jpeg" alt="">
+    </li>
+    <li>
+        <img src="./img/a5.jpeg" alt="">
+    </li>
+</ul>
+```
+
+```js
+let opts = {
+    imgCls: '.imgs'
+}
+let xqlight = new XqLightBox(opts);
+```
+
+### img preview
+
+![xqlight](./lib/img/eg1.jpg)
+
+![xqlight](./lib/img/eg2.jpg)
+
+## use in vue
 
 ### install package
 
@@ -96,7 +145,6 @@ export default {
     }
 </style>
 ```
-
 
 ## issue
 
