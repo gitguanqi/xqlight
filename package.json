@@ -1,50 +1,26 @@
 {
   "name": "xqlight",
-  "version": "0.1.7",
-  "private": false,
+  "version": "0.1.8",
+  "description": "this is a base vue light ui plugins.",
+  "main": "./packages/index.js",
+  "directories": {
+    "example": "example",
+    "lib": "lib"
+  },
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "dependencies": {
-    "core-js": "^3.6.5",
-    "font-awesome": "^4.7.0",
-    "node-sass": "^4.14.1",
-    "sass-loader": "^8.0.2",
-    "vue": "^3.0.0"
-  },
-  "devDependencies": {
-    "@vue/cli-plugin-babel": "~4.5.0",
-    "@vue/cli-plugin-eslint": "~4.5.0",
-    "@vue/cli-service": "~4.5.0",
-    "@vue/compiler-sfc": "^3.0.0",
-    "babel-eslint": "^10.1.0",
-    "eslint": "^6.7.2",
-    "eslint-plugin-vue": "^7.0.0"
-  },
-  "module": "packages/index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/gitguanqi/xqlight.git"
   },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/vue3-essential",
-      "eslint:recommended"
-    ],
-    "parserOptions": {
-      "parser": "babel-eslint"
-    },
-    "rules": {}
+  "keywords": [
+    "lightbox"
+  ],
+  "author": "gitguanqi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gitguanqi/xqlight/issues"
   },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead"
-  ]
+  "homepage": "https://github.com/gitguanqi/xqlight#readme"
 }
