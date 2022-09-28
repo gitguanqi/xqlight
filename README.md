@@ -45,9 +45,9 @@ let xqlight = new XqLightBox(opts);
 
 ### img preview
 
-![xqlight](https://unpkg.com/xqlight/lib/img/eg1.jpg)
+![xqlight](https://unpkg.com/xqlight/example/img/eg1.jpg)
 
-![xqlight](https://unpkg.com/xqlight/lib/img/eg2.jpg)
+![xqlight](https://unpkg.com/xqlight/example/img/eg2.jpg)
 
 ## use in vue
 
