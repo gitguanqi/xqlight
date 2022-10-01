@@ -107,7 +107,8 @@ export default {
                 this.currentImgIndex -=1;
             }
             this.currentScale = 1;
-            this.currentSrc = this.lightImgs[this.currentImgIndex].src;
+            this.currentSrc = this.lightImgs[this.currentImgIndex].src ||
+            this.lightImgs[this.currentImgIndex].url;
         },
         nextImg () {
             if (this.currentImgIndex == this.lightImgs.length - 1) {
@@ -116,7 +117,8 @@ export default {
                 this.currentImgIndex +=1;
             }
             this.currentScale = 1;
-            this.currentSrc = this.lightImgs[this.currentImgIndex].src;
+            this.currentSrc = this.lightImgs[this.currentImgIndex].src ||
+            this.lightImgs[this.currentImgIndex].url;
         },
         fullScreenOpen () {
             var docElm = document.documentElement;
