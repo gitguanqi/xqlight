@@ -1,12 +1,12 @@
 # xqlight
 
-This is a simple javascript lightbox plugin.
+这是一个简单的js灯箱插件。
 
-[View Chinese documents](./zh.md)
+[查看英文文档](./README.md)
 
-## use in browser
+## 在游览器使用
 
-### import cdn
+### 导入CDN
 
 ```html
 <!-- unkpg -->
@@ -14,9 +14,9 @@ This is a simple javascript lightbox plugin.
 <link rel="stylesheet" href="https://unpkg.com/xqlight/lib/css/xqlight.min.css">
 ```
 
-### use methods
+### 使用方法
 
-`imgCls` is the name of a picture frame class on the page.
+`imgCls`是一个自定义的类名，包裹在图片列表的外面一层。
 
 ```html
 <h2>xqlight example</h2>
@@ -47,24 +47,25 @@ let opts = {
 let xqlight = new XqLightBox(opts);
 ```
 
-## use in vue
+## 在Vue中使用
 
-### install package
+### 安装依赖包
 
 ```cmd
 npm install xqlight
 ```
 
-### import package
+### 导入依赖包
 
 ```js
 // main.js
 import xqlight from 'xqlight'
 
+// 1.global component
 Vue.use(xqlight);
 ```
 
-### use on components
+### 在需要的组件中
 
 ```vue
 <template>
@@ -78,7 +79,7 @@ Vue.use(xqlight);
     </div>
 </template>
 <script>
-import xqLightBox from './lightbox.vue'
+import xqLightBox from './lightbox.vue' // 2. single component
 export default {
     data() {
         return {
@@ -114,7 +115,7 @@ export default {
         }
     },
     components: {
-        'xq-lightbox': xqLightBox
+        'xq-lightbox': xqLightBox // // 2. single component
     },
     methods: {
         showImg (url) {
@@ -144,16 +145,16 @@ export default {
 </style>
 ```
 
-### img preview
+### 灯箱预览
 
 ![xqlight](https://unpkg.com/xqlight/test/img/eg1.jpg)
 
 ![xqlight](https://unpkg.com/xqlight/test/img/eg2.jpg)
 
-## issue
+## 问题
 
-[submit your question](https://github.com/gitguanqi/xqlight/issues/new)
+[提交问题](https://github.com/gitguanqi/xqlight/issues/new)
 
-## author
+## 作者
 
 [@gitguanqi](https://github.com/gitguanqi)

@@ -1,6 +1,6 @@
 {
   "name": "xqlight",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "description": "this is a base vue light ui plugins.",
   "main": "./packages/index.js",
   "directories": {
@@ -8,7 +8,8 @@
     "lib": "lib"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:browser": "live-server --port=4001 --host=localhost"
   },
   "repository": {
     "type": "git",
