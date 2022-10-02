@@ -113,10 +113,14 @@ export default {
             }
         },
         downloadImg () {
+            let extName = this.currentSrc.split('/');
+            extName = extName[extName.length-1];
             let donwBtn = document.createElement('a');
-            donwBtn.href = this.currentSrc;
-            donwBtn.download = 'download';
+            let blob = new Blob([this.currentSrc]);
+            donwBtn.download = 'xqlight-'+extName;
+            donwBtn.href = URL.createObjectURL(blob);
             donwBtn.click();
+            URL.revokeObjectURL(blob);
         },
         closeLightBox () {
             this.$emit('hideLightBox');
