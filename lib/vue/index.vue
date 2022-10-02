@@ -7,8 +7,8 @@
             <span>({{ currentImgIndex+1 || 0 }}/{{ lightImgs.length || 0 }})【{{currentTitle||'IMG'+currentImgIndex+1}}】</span>
             <p>
                 <i class="lightbox-download plugin plugin-download" @click="downloadImg"></i>
-                <i v-show="isScale" @click="scaleImg" class="plugin plugin-fullscreen"></i>
-                <i v-show="!isScale" @click="scaleImg" class="plugin plugin-fullscreen-exit"></i>
+                <i v-show="isScale" @click="scaleImg" class="plugin plugin-fullscreen-exit"></i>
+                <i v-show="!isScale" @click="scaleImg" class="plugin plugin-fullscreen"></i>
                 <i @click="closeLightBox" class="plugin plugin-times"></i>
             </p>
         </div>
