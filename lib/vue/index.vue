@@ -253,7 +253,7 @@ export default {
                     height: 100%;
                     cursor: pointer;
                     i {
-                        font-size: 50px;
+                        font-size: 35px;
                         color: $white;
                     }
                     &.la-left {
