@@ -72,18 +72,25 @@ export default {
     watch: {
         'currentUrl': function (val) {
             this.currentSrc = val;
-        }
+        },
+        'currentIndex': function (val) {
+            this.currentImgIndex = val;
+        },
+        'currentText': function (val) {
+            this.currentTitle = val;
+        },
     },
     mounted() {
         window.addEventListener('mousewheel',this.handleScroll);
-        if (this.lightImgs.length) {
-            this.currentSrc = this.lightImgs[0].src;
-        }
         if (this.currentIndex) {
             this.currentImgIndex = this.currentIndex;
         }
         if (this.currentText) {
             this.currentTitle = this.currentText;
+        }
+        if (this.lightImgs.length) {
+            this.currentSrc = this.lightImgs[this.currentImgIndex].src || 
+            this.lightImgs[this.currentImgIndex].url;
         }
     },
     methods: {
@@ -112,15 +119,19 @@ export default {
                 this.currentScale -= 0.2;
             }
         },
-        downloadImg () {
+        async downloadImg () {
+            let url = this.currentSrc;
             let extName = this.currentSrc.split('/');
             extName = extName[extName.length-1];
             extName = extName.indexOf('?') > -1 ? extName.split('?')[0] : extName;
+            let data = await fetch(url);
+            let blob = await data.blob();
             let donwBtn = document.createElement('a');
             donwBtn.download = 'xqlight-'+extName;
-            donwBtn.href = this.currentSrc;
+            donwBtn.href = URL.createObjectURL(blob);
             document.body.appendChild(donwBtn);
             donwBtn.click();
+            URL.revokeObjectURL(blob);
             document.body.removeChild(donwBtn);
         },
         closeLightBox () {
