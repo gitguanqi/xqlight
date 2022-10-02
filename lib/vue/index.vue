@@ -4,7 +4,7 @@
             <span>
                 {{ lightTitle || '图片预览' }}
             </span>
-            <span>({{ currentImgIndex+1 || 0 }}/{{ lightImgs.length || 0 }})</span>
+            <span>({{ currentImgIndex+1 || 0 }}/{{ lightImgs.length || 0 }})【{{currentTitle||'IMG'+currentImgIndex+1}}】</span>
             <p>
                 <i class="lightbox-download plugin plugin-download" @click="downloadImg"></i>
                 <i v-show="isScale" @click="scaleImg" class="plugin plugin-fullscreen"></i>
@@ -53,7 +53,11 @@ export default {
         currentIndex: {
             type: Number,
             defalut: 0
-        }
+        },
+        currentText: {
+            type: String,
+            defalut: 'IMG'
+        },
     },
     data() {
         return {
@@ -62,6 +66,7 @@ export default {
             currentScale: 1,
             currentSrc: '',
             isScale: false,
+            currentTitle: '',
         }
     },
     watch: {
@@ -76,6 +81,9 @@ export default {
         }
         if (this.currentIndex) {
             this.currentImgIndex = this.currentIndex;
+        }
+        if (this.currentText) {
+            this.currentTitle = this.currentText;
         }
     },
     methods: {
@@ -123,6 +131,8 @@ export default {
             this.currentScale = 1;
             this.currentSrc = this.lightImgs[this.currentImgIndex].src ||
             this.lightImgs[this.currentImgIndex].url;
+            this.currentTitle = this.lightImgs[this.currentImgIndex].title ||
+            this.lightImgs[this.currentImgIndex].name;
         },
         nextImg () {
             if (this.currentImgIndex == this.lightImgs.length - 1) {
@@ -133,6 +143,8 @@ export default {
             this.currentScale = 1;
             this.currentSrc = this.lightImgs[this.currentImgIndex].src ||
             this.lightImgs[this.currentImgIndex].url;
+            this.currentTitle = this.lightImgs[this.currentImgIndex].title ||
+            this.lightImgs[this.currentImgIndex].name;
         },
         fullScreenOpen () {
             var docElm = document.documentElement;
