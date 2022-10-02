@@ -63,6 +63,7 @@
 }
 
 .lightbox-content {
+  flex: 1;
   position: relative;
   display: flex;
   justify-content: center;
@@ -70,7 +71,7 @@
   box-sizing: border-box;
   padding: 20px;
   width: 100%;
-  height: calc(100vh - 120px);
+  height: 100%;
 }
 
 .lightbox-ls {
@@ -80,7 +81,7 @@
   display: flex;
   justify-content: space-between;
   padding: 0;
-  width: 1200px;
+  width: 100%;
   height: 100%;
   overflow: hidden;
 }
@@ -91,16 +92,19 @@
   align-items: center;
   width: 50px;
   height: 100%;
+  cursor: pointer;
+}
+
+.lightbox-arrow i {
   font-size: 32px;
   color: #fff;
   font-weight: bold;
-  cursor: pointer;
 }
 
 .lightbox-ls ul {
   flex: 1;
   width: 100%;
-  height: 100%;
+  height: 85%;
   overflow: hidden;
 }
 

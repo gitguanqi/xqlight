@@ -6,15 +6,16 @@
             </span>
             <span>({{ currentImgIndex+1 || 0 }}/{{ lightImgs.length || 0 }})</span>
             <p>
-                <i v-show="isScale" @click="scaleImg" class="fa fa-compress"></i>
-                <i v-show="!isScale" @click="scaleImg" class="fa fa-arrows-alt"></i>
-                <i @click="closeLightBox" class="fa fa-times"></i>
+                <i class="lightbox-download plugin plugin-download" @click="downloadImg"></i>
+                <i v-show="isScale" @click="scaleImg" class="plugin plugin-fullscreen"></i>
+                <i v-show="!isScale" @click="scaleImg" class="plugin plugin-fullscreen-exit"></i>
+                <i @click="closeLightBox" class="plugin plugin-times"></i>
             </p>
         </div>
         <div class="lightbox-content">
             <div class="lightbox-ls">
                 <div class="lightbox-arrow la-left" @click="prevImg">
-                    <i class="fa fa-chevron-left"></i>
+                    <i class="plugin plugin-arrow-left"></i>
                 </div>
                 <ul>
                     <li @click="scaleMouseImg" :style="{'cursor': `${currentScale > 0.4 ? 'zoom-out' : 'zoom-in'}`}">
@@ -24,7 +25,7 @@
                     </li>
                 </ul>
                 <div class="lightbox-arrow la-right" @click="nextImg">
-                    <i class="fa fa-chevron-right"></i>
+                    <i class="plugin plugin-arrow-right"></i>
                 </div>
             </div>
         </div>
@@ -48,6 +49,10 @@ export default {
         currentUrl: {
             type: String,
             defalut: ''
+        },
+        currentIndex: {
+            type: Number,
+            defalut: 0
         }
     },
     data() {
@@ -68,6 +73,9 @@ export default {
         window.addEventListener('mousewheel',this.handleScroll);
         if (this.lightImgs.length) {
             this.currentSrc = this.lightImgs[0].src;
+        }
+        if (this.currentIndex) {
+            this.currentImgIndex = this.currentIndex;
         }
     },
     methods: {
@@ -95,6 +103,12 @@ export default {
             if (this.currentScale > 0.4) {
                 this.currentScale -= 0.2;
             }
+        },
+        downloadImg () {
+            let donwBtn = document.createElement('a');
+            donwBtn.href = this.currentSrc;
+            donwBtn.download = 'download';
+            donwBtn.click();
         },
         closeLightBox () {
             this.$emit('hideLightBox');
@@ -191,6 +205,7 @@ export default {
             }
         }
         .lightbox-content {
+            flex: 1;
             position: relative;
             display: flex;
             justify-content: center;
@@ -198,19 +213,19 @@ export default {
             box-sizing: border-box;
             padding: 20px;
             width: 100%;
-            height: calc(100vh - 60px);
+            height: 100%;
             .lightbox-ls {
                 position: absolute;
                 top: 10%;
                 box-sizing: border-box;
                 padding: 0 50px;
-                width: 800px;
-                height: 600px;
+                width: 100%;
+                height: 100%;
                 overflow: hidden;
                 ul {
-                    max-width: 700px;
+                    flex: 1;
                     width: 100%;
-                    height: 100%;
+                    height: 85%;
                     overflow: hidden;
                     li {
                         display: flex;
