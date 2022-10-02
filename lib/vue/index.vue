@@ -115,6 +115,7 @@ export default {
         downloadImg () {
             let extName = this.currentSrc.split('/');
             extName = extName[extName.length-1];
+            extName = extName.indexOf('?') > -1 ? extName.split('?')[0] : extName;
             let donwBtn = document.createElement('a');
             let blob = new Blob([this.currentSrc]);
             donwBtn.download = 'xqlight-'+extName;
