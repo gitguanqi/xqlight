@@ -215,8 +215,6 @@ export default {
             width: 100%;
             height: 100%;
             .lightbox-ls {
-                position: absolute;
-                top: 10%;
                 box-sizing: border-box;
                 padding: 0 50px;
                 width: 100%;
@@ -225,7 +223,7 @@ export default {
                 ul {
                     flex: 1;
                     width: 100%;
-                    height: 85%;
+                    height: 90%;
                     overflow: hidden;
                     li {
                         display: flex;
