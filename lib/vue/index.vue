@@ -117,11 +117,11 @@ export default {
             extName = extName[extName.length-1];
             extName = extName.indexOf('?') > -1 ? extName.split('?')[0] : extName;
             let donwBtn = document.createElement('a');
-            let blob = new Blob([this.currentSrc]);
             donwBtn.download = 'xqlight-'+extName;
-            donwBtn.href = URL.createObjectURL(blob);
+            donwBtn.href = this.currentSrc;
+            document.body.appendChild(donwBtn);
             donwBtn.click();
-            URL.revokeObjectURL(blob);
+            document.body.removeChild(donwBtn);
         },
         closeLightBox () {
             this.$emit('hideLightBox');
