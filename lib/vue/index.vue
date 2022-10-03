@@ -1,10 +1,10 @@
 <template>
     <div class="lightbox" v-show="showLightBox">
         <div class="lightbox-title">
-            <span>
+            <span class="lightbox-title-tip">
                 {{ lightTitle || '图片预览' }}
             </span>
-            <span>({{ currentImgIndex+1 || 0 }}/{{ lightImgs.length || 0 }})【{{currentTitle||'IMG'+currentImgIndex+1}}】</span>
+            <span class="lightbox-title-num">({{ currentImgIndex+1 || 0 }}/{{ lightImgs.length || 0 }})【{{currentTitle||'IMG'+currentImgIndex+1}}】</span>
             <p>
                 <i class="lightbox-download plugin plugin-download" @click="downloadImg"></i>
                 <i v-show="isScale" @click="scaleImg" class="plugin plugin-fullscreen-exit"></i>
@@ -211,7 +211,22 @@ export default {
             height: 60px;
             line-height: 60px;
             color: $white;
-            font-size: 20px;
+            font-size: 18px;
+            overflow: hidden;
+            span {
+                display: inline-block;
+                font-size: 16px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                &.lightbox-title-tip {
+                    width: 65px;
+                }
+                &.lightbox-title-num {
+                    width: 600px;
+                    text-align: center;
+                }
+            }
             p {
                 position: relative;
                 display: flex;
@@ -295,6 +310,13 @@ export default {
     
     @media all and (max-width:768px) and (min-width: 319px) {
         .lightbox {
+            .lightbox-title {
+                span {
+                    &.lightbox-title-num {
+                        flex: 1;
+                    }
+                }
+            }
             .lightbox-content {
                 .lightbox-ls {
                     width: 95%;
