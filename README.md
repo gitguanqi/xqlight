@@ -150,6 +150,8 @@ export default {
 
 ![xqlight](https://unpkg.com/xqlight/test/img/eg2.jpg)
 
+[demo](https://unpkg.com/xqlight/test/index.html)
+
 ## issue
 
 [submit your question](https://github.com/gitguanqi/xqlight/issues/new)
