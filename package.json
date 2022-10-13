@@ -1,6 +1,6 @@
 {
     "name": "xqlight",
-    "version": "0.3.5",
+    "version": "0.3.6",
     "description": "this is a base vue light ui plugins.",
     "main": "./lib/vue/index.js",
     "directories": {

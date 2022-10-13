@@ -95,7 +95,7 @@ export default {
             this.currentSrc = this.lightImgs[this.currentImgIndex].src || 
             this.lightImgs[this.currentImgIndex].url;
         }
-        this.scrollBar(false);
+        this.scrollBar(true);
     },
     methods: {
         handleScroll (e) {
