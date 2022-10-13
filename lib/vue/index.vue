@@ -72,12 +72,15 @@ export default {
     watch: {
         'currentUrl': function (val) {
             this.currentSrc = val;
+            this.scrollBar(false);
         },
         'currentIndex': function (val) {
             this.currentImgIndex = val;
+            this.scrollBar(false);
         },
         'currentText': function (val) {
             this.currentTitle = val;
+            this.scrollBar(false);
         },
     },
     mounted() {
@@ -92,6 +95,7 @@ export default {
             this.currentSrc = this.lightImgs[this.currentImgIndex].src || 
             this.lightImgs[this.currentImgIndex].url;
         }
+        this.scrollBar(false);
     },
     methods: {
         handleScroll (e) {
@@ -135,6 +139,7 @@ export default {
             document.body.removeChild(donwBtn);
         },
         closeLightBox () {
+            this.scrollBar(true);
             this.$emit('hideLightBox');
         },
         prevImg () {
@@ -184,6 +189,13 @@ export default {
                 document.mozCancelFullScreen();
             } else if (document.webkitCancelFullScreen) {
                 document.webkitCancelFullScreen();
+            }
+        },
+        scrollBar (flag) {
+            if (flag) {
+                document.body.style.overflow = '';
+            } else {
+                document.body.style.overflow = 'hidden';
             }
         }
     },

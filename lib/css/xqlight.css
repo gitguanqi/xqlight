@@ -56,7 +56,9 @@
   content: "\e641";
 }
 
-
+body.hidden {
+  overflow: hidden;
+}
 
 .lightbox {
   position: fixed;
