@@ -10,8 +10,8 @@
 
 ```html
 <!-- unkpg -->
-<script src="https://unpkg.com/xqlight/lib/js/xqlight.min.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/xqlight/lib/css/xqlight.min.css">
+<script src="https://xqgj.cc/xqcdn/libs/xqlight/js/xqlight.min.js"></script>
+<link rel="stylesheet" href="https://xqgj.cc/xqcdn/libs/xqlight/css/xqlight.min.css">
 ```
 
 ### 使用方法
@@ -147,11 +147,11 @@ export default {
 
 ### 灯箱预览
 
-![xqlight](https://unpkg.com/xqlight/test/img/eg1.jpg)
+![xqlight](https://xqgj.cc/xqlight/test/img/eg1.jpg)
 
-![xqlight](https://unpkg.com/xqlight/test/img/eg2.jpg)
+![xqlight](https://xqgj.cc/xqlight/test/img/eg2.jpg)
 
-[在线预览](https://unpkg.com/xqlight/test/index.html)
+[在线预览](https://xqgj.cc/xqlight/test/index.html)
 
 ## 问题
 

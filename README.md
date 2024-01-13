@@ -10,8 +10,8 @@ This is a simple javascript lightbox plugin.
 
 ```html
 <!-- unkpg -->
-<script src="https://unpkg.com/xqlight/lib/js/xqlight.min.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/xqlight/lib/css/xqlight.min.css">
+<script src="https://xqgj.cc/xqcdn/libs/xqlight/js/xqlight.min.js"></script>
+<link rel="stylesheet" href="https://xqgj.cc/xqcdn/libs/xqlight/css/xqlight.min.css">
 ```
 
 ### use methods
@@ -146,11 +146,11 @@ export default {
 
 ### img preview
 
-![xqlight](https://unpkg.com/xqlight/test/img/eg1.jpg)
+![xqlight](https://xqgj.cc/xqlight/test/img/eg1.jpg)
 
-![xqlight](https://unpkg.com/xqlight/test/img/eg2.jpg)
+![xqlight](https://xqgj.cc/xqlight/test/img/eg2.jpg)
 
-[demo](https://unpkg.com/xqlight/test/index.html)
+[demo](https://xqgj.cc/xqlight/test/index.html)
 
 ## issue
 
