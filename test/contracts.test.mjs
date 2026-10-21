@@ -91,6 +91,14 @@ test('样式只保留一个可见状态，Vue 与浏览器版共享', () => {
     assert.match(css, /\.lightbox\.active\s*\{[^}]*display:\s*flex/s);
     assert.match(css, /list-style:\s*none/, '缺少列表重置，脱离 demo.css 会露出项目符号');
     assert.ok(!css.includes('iconfont.eot'), 'eot 字体已废弃');
+
+    // 0.5.0 起的美化基线：别再退回固定宽度与桌面专属写法
+    assert.ok(!/max-width:\s*700px/.test(css), '图片不应再有 700px 硬上限');
+    assert.match(css, /100dvh/, '应提供 dvh 视口高度，避免移动端地址栏跳动');
+    assert.match(css, /prefers-reduced-motion/, '应尊重系统减弱动效设置');
+    assert.match(css, /safe-area-inset/, '应处理刘海屏安全区');
+    assert.match(css, /lightbox-thumbs/, '缩略图样式缺失');
+    assert.match(css, /data-xqlight-status="loading"/, '加载态样式缺失');
 });
 
 test('Vue 组件覆盖两个大版本的生命周期与事件', () => {

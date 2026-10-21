@@ -14,6 +14,9 @@
 //   destroy         销毁后节点移除、监听归零、滚动恢复
 //   missing-option  不传 imgCls 只告警，不抛错
 //   ready-state     脚本在 DOMContentLoaded 之前执行时，等解析完成再扫描
+//   backdrop        点空白处关闭、点图片放大且不关闭
+//   toolbar         缩放/旋转按钮的状态与角度循环
+//   focus-trap      Tab / Shift+Tab 在灯箱内部循环
 
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -426,15 +429,15 @@ const SCENARIOS = {
         instance.prevImg();
         results.push(['prev wraps to the last image', current.textContent === '3', current.textContent]);
 
-        instance.handleScroll({ deltaY: -1, preventDefault() {} });
-        results.push(['wheel zooms in', img.style.transform === 'scale(1.2)', img.style.transform]);
-        instance.handleScroll({ deltaY: 1, preventDefault() {} });
-        results.push(['wheel zooms back out', img.style.transform === 'scale(1)', img.style.transform]);
+        instance.handleScroll({ deltaY: -100, preventDefault() {} });
+        results.push(['wheel zooms in', img.style.transform === 'translate3d(0px, 0px, 0px) scale(1.2)', img.style.transform]);
+        instance.handleScroll({ deltaY: 100, preventDefault() {} });
+        results.push(['wheel zooms back out', img.style.transform === 'translate3d(0px, 0px, 0px) scale(1)', img.style.transform]);
 
         instance.showLightBox(0);
-        instance.handleScroll({ deltaY: -1, preventDefault() {} });
+        instance.handleScroll({ deltaY: -100, preventDefault() {} });
         instance.nextImg();
-        results.push(['switching image resets the zoom', img.style.transform === 'scale(1)', img.style.transform]);
+        results.push(['switching image resets the zoom', img.style.transform === 'translate3d(0px, 0px, 0px) scale(1)', img.style.transform]);
 
         instance.downloadImg();
         results.push(['download returns a promise', typeof instance.downloadImg().then === 'function']);
@@ -582,6 +585,161 @@ const SCENARIOS = {
         sandbox.document.dispatch('DOMContentLoaded');
         results.push(['scans again after DOMContentLoaded', late.imgList.length === 2, String(late.imgList.length)]);
         results.push(['the second scan is idempotent', immediate.imgList.length === 3, String(immediate.imgList.length)]);
+        return results;
+    },
+
+    backdrop: () => {
+        const { Widget, sandbox } = loadWidget(SCENARIOS._file);
+        const results = [];
+        if (typeof Widget !== 'function') {
+            results.push(['exposes a constructable export', false, typeof Widget]);
+            return results;
+        }
+        const instance = mount(Widget, sandbox, '.imgs', ['./img/a1.jpg', './img/a2.jpg']);
+        const root = rootOf(instance);
+        const img = root.querySelector('[data-xqlight="img"]');
+        const link = root.querySelector('[data-xqlight="link"]');
+
+        instance.showLightBox(0);
+        root.click();
+        results.push(['clicking the empty backdrop closes it', !root.classList.contains('active')]);
+        results.push(['closing the backdrop restores scrolling', sandbox.document.body.style.overflow === '', sandbox.document.body.style.overflow]);
+
+        instance.showLightBox(0);
+        link.click();
+        results.push(['clicking the image keeps the lightbox open', root.classList.contains('active')]);
+        results.push([
+            'clicking the image zooms to 2x',
+            img.style.transform === 'translate3d(0px, 0px, 0px) scale(2)',
+            img.style.transform
+        ]);
+        link.click();
+        results.push([
+            'clicking the image again restores 1x',
+            img.style.transform === 'translate3d(0px, 0px, 0px) scale(1)',
+            img.style.transform
+        ]);
+        return results;
+    },
+
+    toolbar: () => {
+        const { Widget, sandbox } = loadWidget(SCENARIOS._file);
+        const results = [];
+        if (typeof Widget !== 'function') {
+            results.push(['exposes a constructable export', false, typeof Widget]);
+            return results;
+        }
+        const instance = mount(Widget, sandbox, '.imgs', ['./img/a1.jpg', './img/a2.jpg']);
+        const root = rootOf(instance);
+        const img = root.querySelector('[data-xqlight="img"]');
+        const zoom = root.querySelector('[data-xqlight="zoom"]');
+        const rotate = root.querySelector('[data-xqlight="rotate"]');
+
+        instance.showLightBox(0);
+
+        zoom.click();
+        results.push([
+            'the zoom button zooms to 2x',
+            img.style.transform === 'translate3d(0px, 0px, 0px) scale(2)',
+            img.style.transform
+        ]);
+        results.push(['the zoom button reflects the zoomed state', zoom.classList.contains('lightbox-zoom-active')]);
+        results.push([
+            'the zoom button switches its label when zoomed',
+            zoom.getAttribute('aria-label') === '还原为原始大小',
+            zoom.getAttribute('aria-label')
+        ]);
+
+        zoom.click();
+        results.push([
+            'the zoom button restores 1x on the second click',
+            img.style.transform === 'translate3d(0px, 0px, 0px) scale(1)',
+            img.style.transform
+        ]);
+
+        rotate.click();
+        results.push([
+            'the rotate button turns the image 90 degrees',
+            img.style.transform === 'translate3d(0px, 0px, 0px) rotate(90deg) scale(1)',
+            img.style.transform
+        ]);
+        results.push(['the rotated image is flagged for CSS', img.classList.contains('lightbox-img-rotated')]);
+
+        rotate.click();
+        rotate.click();
+        rotate.click();
+        results.push([
+            'four rotations return to the original orientation',
+            img.style.transform === 'translate3d(0px, 0px, 0px) scale(1)',
+            img.style.transform
+        ]);
+
+        sandbox.document.dispatch('keydown', { key: 'r' });
+        results.push([
+            'the R key rotates as well',
+            img.style.transform === 'translate3d(0px, 0px, 0px) rotate(90deg) scale(1)',
+            img.style.transform
+        ]);
+
+        instance.nextImg();
+        results.push([
+            'switching images resets the rotation',
+            img.style.transform === 'translate3d(0px, 0px, 0px) scale(1)',
+            img.style.transform
+        ]);
+        return results;
+    },
+
+    'focus-trap': () => {
+        const { Widget, sandbox } = loadWidget(SCENARIOS._file);
+        const results = [];
+        if (typeof Widget !== 'function') {
+            results.push(['exposes a constructable export', false, typeof Widget]);
+            return results;
+        }
+        const instance = mount(Widget, sandbox, '.imgs', ['./img/a1.jpg', './img/a2.jpg', './img/a3.jpg']);
+        const root = rootOf(instance);
+        const document = sandbox.document;
+        const close = root.querySelector('[data-xqlight="close"]');
+        const prev = root.querySelector('[data-xqlight="prev"]');
+        const download = root.querySelector('[data-xqlight="download"]');
+        const retry = root.querySelector('[data-xqlight="retry"]');
+        const thumbs = root.querySelectorAll('[data-xqlight-thumb]');
+        const link = root.querySelector('[data-xqlight="link"]');
+        const zoom = root.querySelector('[data-xqlight="zoom"]');
+        const who = function () {
+            const active = document.activeElement;
+            if (!active) return 'none';
+            const hook = active.getAttribute ? active.getAttribute('data-xqlight') : null;
+            return String(active.nodeName) + (hook ? '[' + hook + ']' : '');
+        };
+
+        instance.showLightBox(0);
+        results.push(['focus lands on the close control', document.activeElement === close, who()]);
+
+        document.dispatch('keydown', { key: 'Tab', shiftKey: false });
+        results.push(['Tab moves to the next control', document.activeElement === prev, who()]);
+
+        document.dispatch('keydown', { key: 'Tab', shiftKey: true });
+        results.push(['Shift+Tab moves back', document.activeElement === close, who()]);
+
+        link.focus();
+        document.dispatch('keydown', { key: 'Tab', shiftKey: false });
+        results.push(['Tab follows the DOM order past the image', document.activeElement === retry, who()]);
+
+        results.push(['thumbnails are rendered for the gallery', thumbs.length === 3, String(thumbs.length)]);
+        const last = thumbs.length ? thumbs[thumbs.length - 1] : retry;
+        last.focus();
+        document.dispatch('keydown', { key: 'Tab', shiftKey: false });
+        results.push(['Tab wraps from the last control to the first', document.activeElement === zoom, who()]);
+
+        document.dispatch('keydown', { key: 'End' });
+        results.push(['End jumps to the last image', instance.currentImgIndex === 2, String(instance.currentImgIndex)]);
+        document.dispatch('keydown', { key: 'Home' });
+        results.push(['Home jumps to the first image', instance.currentImgIndex === 0, String(instance.currentImgIndex)]);
+
+        document.dispatch('keydown', { key: 'Escape' });
+        results.push(['Escape still closes', !root.classList.contains('active')]);
         return results;
     }
 };

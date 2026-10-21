@@ -109,6 +109,32 @@
                     probe.src = src;
                 });
             },
+            /** 轮询直到条件成立；超时抛错，由 checkAsync 记成失败 */
+            waitFor(fn, timeout) {
+                const limit = typeof timeout === 'number' ? timeout : 4000;
+                const start = Date.now();
+                return new Promise(function (resolve, reject) {
+                    function tick() {
+                        let value = false;
+                        try {
+                            value = fn();
+                        } catch (error) {
+                            reject(error);
+                            return;
+                        }
+                        if (value) {
+                            resolve(true);
+                            return;
+                        }
+                        if (Date.now() - start > limit) {
+                            reject(new Error('waitFor timeout after ' + limit + 'ms'));
+                            return;
+                        }
+                        setTimeout(tick, 50);
+                    }
+                    tick();
+                });
+            },
             /** 等一帧：滚轮缩放是 rAF 合并写入的，断言前要让它落地 */
             nextFrame() {
                 return new Promise(function (resolve) {

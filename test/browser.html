@@ -32,7 +32,7 @@
                 <li><img src="./img/a2.jpeg" alt="示例图 2"></li>
                 <li><img src="./img/a3.jpeg" alt="示例图 3"></li>
             </ul>
-            <p class="demo-note">点击任意图片打开；滚轮或 <code>+</code>/<code>-</code> 缩放；方向键切换；<code>Esc</code> 关闭。</p>
+            <p class="demo-note">点击图片打开；点击图片本身放大/还原；点空白处或 <code>Esc</code> 关闭；方向键、<code>Home</code>/<code>End</code> 切换；滚轮或 <code>+</code>/<code>-</code> 缩放；放大后可拖拽。</p>
         </section>
 
         <section class="demo-panel">
@@ -47,6 +47,7 @@
         (async function () {
             const suite = XqSuite.create();
             const IMG = './img/a1.jpg';
+            const REST = 'translate3d(0px, 0px, 0px) scale(1)';
 
             suite.check('全局构造器已导出', () => typeof window.XqLightBox === 'function');
             if (typeof window.XqLightBox !== 'function') {
@@ -54,38 +55,95 @@
                 return;
             }
             suite.check('构造器带版本号', () => ({
-                ok: window.XqLightBox.version === '0.4.0',
+                ok: window.XqLightBox.version === '0.5.0',
                 detail: String(window.XqLightBox.version)
             }));
 
             const box = new XqLightBox({ imgCls: '.imgs' });
-            suite.check('注入自己的根节点', () => box.root instanceof HTMLElement && document.body.contains(box.root));
-            suite.check('根节点下没有嵌套的 .lightbox', () => box.root.querySelectorAll('.lightbox').length === 0);
-            suite.check('不再写入重复 id', () => box.root.querySelectorAll('[id]').length === 0);
+            const root = box.root;
+            const current = () => root.querySelector('[data-xqlight="current"]').textContent;
+            const img = root.querySelector('[data-xqlight="img"]');
+
+            suite.check('注入自己的根节点', () => root instanceof HTMLElement && document.body.contains(root));
+            suite.check('根节点下没有嵌套的 .lightbox', () => root.querySelectorAll('.lightbox').length === 0);
+            suite.check('不再写入重复 id', () => root.querySelectorAll('[id]').length === 0);
 
             await suite.checkAsync('首张图片可解码', () => suite.waitForImage(IMG));
             suite.check('扫描到 3 张图片', () => box.imgList.length === 3, String(box.imgList.length));
+            suite.check('缩略图渲染 3 项', () => root.querySelectorAll('[data-xqlight-thumb]').length === 3, String(root.querySelectorAll('[data-xqlight-thumb]').length));
 
             box.showLightBox(0);
-            suite.check('打开后进入 active 状态', () => box.root.classList.contains('active'));
+            suite.check('打开后进入 active 状态', () => root.classList.contains('active'));
             suite.check('锁定页面滚动', () => document.body.style.overflow === 'hidden');
-            suite.check('计数显示 1 / 3', () => {
-                const current = box.root.querySelector('[data-xqlight="current"]').textContent;
-                const total = box.root.querySelector('[data-xqlight="total"]').textContent;
-                return current === '1' && total === '3';
-            });
+            suite.check('计数显示 1 / 3', () => current() === '1' && root.querySelector('[data-xqlight="total"]').textContent === '3');
+            await suite.checkAsync('图片加载完成后状态为 loaded', () => suite.waitFor(() => root.getAttribute('data-xqlight-status') === 'loaded'));
 
+            root.querySelectorAll('[data-xqlight-thumb]')[2].click();
+            suite.check('点击缩略图跳到第 3 张', () => current() === '3' && box.currentImgIndex === 2);
+            suite.check('当前缩略图高亮', () => root.querySelectorAll('[data-xqlight-thumb]')[2].classList.contains('active'));
+
+            box.goTo(0);
             box.nextImg();
-            suite.check('下一张切到第 2 张', () => box.root.querySelector('[data-xqlight="current"]').textContent === '2');
+            suite.check('下一张切到第 2 张', () => current() === '2');
 
-            box.handleScroll({ deltaY: -1, preventDefault: function () {} });
+            box.handleScroll({ deltaY: -100, preventDefault: function () {} });
             await suite.checkAsync('滚轮放大到 1.2 倍', async () => {
                 await suite.nextFrame();
-                return box.root.querySelector('[data-xqlight="img"]').style.transform === 'scale(1.2)';
+                return img.style.transform === 'translate3d(0px, 0px, 0px) scale(1.2)';
             });
 
             box.nextImg();
-            suite.check('切图后缩放复位', () => box.root.querySelector('[data-xqlight="img"]').style.transform === 'scale(1)');
+            suite.check('切图后缩放复位', () => img.style.transform === REST);
+
+            root.querySelector('[data-xqlight="link"]').click();
+            await suite.checkAsync('点击图片放大到 2 倍', async () => {
+                await suite.nextFrame();
+                return box.isOpen && img.style.transform === 'translate3d(0px, 0px, 0px) scale(2)';
+            });
+            root.querySelector('[data-xqlight="link"]').click();
+            await suite.checkAsync('再次点击图片还原', async () => {
+                await suite.nextFrame();
+                return img.style.transform === REST;
+            });
+
+            const nextArrow = root.querySelector('[data-xqlight="next"]');
+            const beforeKey = box.currentImgIndex;
+            nextArrow.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+            suite.check('Enter 可激活箭头按钮', () => box.currentImgIndex === (beforeKey + 1) % 3, String(box.currentImgIndex));
+
+            // 工具栏：缩放 / 旋转
+            const zoomBtn = root.querySelector('[data-xqlight="zoom"]');
+            const rotateBtn = root.querySelector('[data-xqlight="rotate"]');
+            suite.check('工具栏包含缩放与旋转按钮', () => Boolean(zoomBtn) && Boolean(rotateBtn));
+            zoomBtn.click();
+            await suite.checkAsync('缩放按钮放大到 2 倍', async () => {
+                await suite.nextFrame();
+                return img.style.transform === 'translate3d(0px, 0px, 0px) scale(2)';
+            });
+            suite.check('缩放按钮切换为还原态', () => zoomBtn.classList.contains('lightbox-zoom-active') &&
+                zoomBtn.getAttribute('aria-label') === '还原为原始大小');
+            zoomBtn.click();
+            await suite.checkAsync('缩放按钮第二次点击还原', async () => {
+                await suite.nextFrame();
+                return img.style.transform === REST;
+            });
+
+            rotateBtn.click();
+            await suite.checkAsync('旋转按钮转 90 度', async () => {
+                await suite.nextFrame();
+                return img.style.transform === 'translate3d(0px, 0px, 0px) rotate(90deg) scale(1)';
+            });
+            suite.check('旋转后的图片带 rotated 标记', () => img.classList.contains('lightbox-img-rotated'));
+            box.nextImg();
+            suite.check('切图后旋转复位', () => img.style.transform === REST && box.currentRotation === 0);
+
+            // 点箭头不能把灯箱关掉（旧 bug：指针捕获让 click 目标被改写）
+            root.querySelector('[data-xqlight="next"]').click();
+            suite.check('点击箭头不关闭灯箱', () => box.isOpen);
+
+            root.querySelector('[data-xqlight="close"]').focus();
+            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+            suite.check('Tab 焦点留在灯箱内部', () => root.contains(document.activeElement));
 
             suite.check('切换全屏不抛错', () => {
                 box.scaleImg();
@@ -93,15 +151,37 @@
                 return true;
             });
 
+            // 指针捕获必须"确认拖拽后才捕获"：按下即捕获会把 click 目标改写成 .lightbox-ls，
+            // 箭头/图片的点击全部失效、遮罩判定误判（旧 bug）
+            const ls = root.querySelector('[data-xqlight="ls"]');
+            ls.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 7, clientX: 100, clientY: 100, bubbles: true }));
+            suite.check('按下时不捕获指针', () => box._gesture && !box._gesture.captured);
+            ls.dispatchEvent(new PointerEvent('pointermove', { pointerId: 7, clientX: 170, clientY: 100, bubbles: true }));
+            suite.check('确认移动后才捕获指针', () => box._gesture && box._gesture.captured);
+            ls.dispatchEvent(new PointerEvent('pointerup', { pointerId: 7, clientX: 170, clientY: 100, bubbles: true }));
+            suite.check('拖拽后的 click 不会关闭灯箱', () => {
+                root.click();
+                return box.isOpen;
+            });
+            ls.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 8, clientX: 100, clientY: 100, bubbles: true }));
+            ls.dispatchEvent(new PointerEvent('pointerup', { pointerId: 8, clientX: 100, clientY: 100, bubbles: true }));
+            suite.check('下一次按下清除拖拽抑制标记', () => !box._suppressClick);
+
+            root.querySelector('[data-xqlight="content"]').click();
+            suite.check('点击遮罩关闭', () => !root.classList.contains('active'));
+            suite.check('遮罩关闭后恢复滚动', () => document.body.style.overflow === '');
+
+            box.showLightBox(0);
+            suite.check('可以再次打开', () => root.classList.contains('active'));
             box.closeLightBox();
-            suite.check('关闭后移除 active', () => !box.root.classList.contains('active'));
+            suite.check('关闭后移除 active', () => !root.classList.contains('active'));
             suite.check('关闭后恢复滚动', () => document.body.style.overflow === '');
 
             const disposable = new XqLightBox({ imgCls: '.imgs' });
             const disposableRoot = disposable.root;
             disposable.destroy();
             suite.check('销毁后节点被移除', () => !document.body.contains(disposableRoot));
-            suite.check('演示实例仍然存活', () => document.body.contains(box.root));
+            suite.check('演示实例仍然存活', () => document.body.contains(root));
 
             suite.check('页面没有横向溢出', () => suite.noHorizontalOverflow());
 
