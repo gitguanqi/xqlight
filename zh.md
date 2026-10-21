@@ -19,8 +19,8 @@ npm install xqlight
 ## 在浏览器中使用
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/xqlight@0.4.0/lib/css/xqlight.min.css">
-<script src="https://unpkg.com/xqlight@0.4.0/lib/js/xqlight.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/xqlight@0.5.0/lib/css/xqlight.min.css">
+<script src="https://unpkg.com/xqlight@0.5.0/lib/js/xqlight.min.js"></script>
 ```
 
 先写好图库标记，再构造灯箱。`imgCls` 是包裹图片的容器选择器，**必填**。
@@ -43,7 +43,8 @@ npm install xqlight
 
 | 选项 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
-| `imgCls` | `string` | 是 | 图库容器选择器，按 `<imgCls> img` 查找图片。 |
+| `imgCls` | `string` | 是 | 图库容器选择器，按 `<imgCls> img` 查找图片。每个 `<img>` 可加 `data-thumb="<地址>"` 指定缩略图。 |
+| `thumbnails` | `boolean \| 'auto'` | 否 | 缩略图条：`true` 强制显示、`false` 关闭、`'auto'`（默认）在 2–20 张时显示。 |
 
 `imgCls` 缺失或不可用时只打印警告，构造函数不会抛错。
 
@@ -56,15 +57,44 @@ npm install xqlight
 | `prevImg()` / `nextImg()` | 前后切换，两端环绕。 |
 | `goTo(index)` | 跳到指定索引。 |
 | `zoom(direction)` | `1` 放大，`-1` 缩小，范围夹紧在 0.4–3 倍。 |
-| `scaleImg()` | 切换全屏。 |
+| `setScale(value)` | 直接设置缩放；回到 1 倍时清零位移。 |
+| `toggleZoom()` | 在 1 倍与点击放大档之间切换（点击图片的效果）。 |
+| `rotate(step?)` | 顺时针旋转 90 度（0→90→180→270→0），同时清零位移，切图复位；传负数逆时针。 |
+| `scaleImg()` | 切换全屏。全屏作用于灯箱根节点，而不是整页。 |
 | `downloadImg(url?, name?)` | 下载当前（或指定）图片，返回 `Promise<boolean>`。 |
 | `refresh()` | DOM 变化后重新扫描图库。 |
 | `destroy()` | 解绑监听并移除节点，重复调用安全。 |
 
 ### 键盘操作
 
-灯箱打开时：`Esc` 关闭，`←` / `→` 切换，`+` / `-` 缩放。
-滚轮只在打开时缩放，不会把页面一起滚走。
+灯箱打开时：`Esc` 关闭，`←` / `→` 切换，`Home` / `End` 跳到首张 / 末张，`+` / `-` 缩放，
+`R` 顺时针旋转 90 度。`Tab` 在灯箱内循环，`Enter` / `Space` 激活当前控件（关闭、箭头、
+下载、缩放、旋转、全屏、重试）。滚轮只在打开时缩放，不会把页面一起滚走；
+触控板的小幅滚动会先累积，一次手势只走一档。
+
+### 指针交互
+
+- 点击遮罩空白处关闭；点图片、箭头、标题或缩略图不触发关闭。
+- 点击图片在 1 倍与 2 倍之间切换；放大后可拖拽平移，平移范围会被限制，图片不会滑出视野。
+- 触屏设备上左右滑动切换图片。
+
+### 状态与 CSS 钩子
+
+根节点带 `data-xqlight-status="idle | loading | loaded | error"`：`loading` 时显示加载指示，
+`loaded` 时图片淡入，`error` 时展示错误卡片与重试按钮（`[data-xqlight="retry"]`）。
+相邻图片会在后台预加载。
+
+其他可用的钩子：`[data-xqlight="thumbs"]`（缩略图条，`role="group"`）、
+`[data-xqlight-thumb="<索引>"]`（单个缩略图，当前项带 `aria-current`）、
+`.lightbox-img-zoomed`（放大到 1 倍以上时挂上，同时把光标切成 grab/grabbing）、
+`.lightbox-img-rotated`（图片处于旋转状态时挂上）。
+
+标题栏共五个控件：缩放（放大镜图标，放大后切换为"还原"态）、旋转（CSS 画的环形箭头，
+不依赖字体）、下载、全屏、关闭。
+
+入场动画放在子元素的 keyframes 里，因此打开有过渡、关闭是瞬切（为了保持
+`.lightbox` / `.lightbox.active` 的 display 契约足够简单）。所有动效在
+`prefers-reduced-motion: reduce` 下关闭。
 
 ## 作为模块使用
 
@@ -81,7 +111,7 @@ const XqLightBox = require('xqlight');
 纯函数也会导出，便于复用：
 
 ```js
-import XqLightBox, { clampScale, wrapIndex, buildFileName } from 'xqlight';
+import XqLightBox, { clampScale, wrapIndex, buildFileName, buildTransform, accumulateWheel } from 'xqlight';
 ```
 
 浏览器构建上同样的函数挂在 `XqLightBox.utils`。
@@ -157,6 +187,7 @@ export default {
 | `currentUrl` | `String` | `''` | 显式指定图片地址；列表元素没给地址时生效。 |
 | `currentIndex` | `Number` | `0` | 打开时展示的索引。 |
 | `currentText` | `String` | `''` | 显式指定标题。 |
+| `thumbnails` | `Boolean \| String` | `'auto'` | 与构造选项同义；列表元素可给 `thumb` 指定缩略图。 |
 
 ### 事件
 
@@ -181,10 +212,20 @@ import 'xqlight/lib/css/xqlight.css';
 ## 样式
 
 样式表是两个构建的唯一来源：浏览器版由脚本给根节点加 `.active`，Vue 版绑定同一个
-类名，两者不会互相打架。以下类名属于公开契约：
+类名，两者不会互相打架。必须自行引入 `lib/css/xqlight.css`（或 `.min.css`）——
+组件里没有内联样式。
+
+以下类名属于公开契约：
 
 `.lightbox`、`.lightbox-title`、`.lightbox-content`、`.lightbox-ls`、`.lightbox-list`、
-`.lightbox-img`、`.lightbox-arrow`、`.lightbox-link`、`.lightbox-name`。
+`.lightbox-img`、`.lightbox-arrow`、`.lightbox-link`、`.lightbox-name`、
+`.lightbox-thumbs`、`.lightbox-thumb`、`.lightbox-loader`、`.lightbox-error`。
+
+除类名外，每个结构与交互节点都带 `data-xqlight="<角色>"` 钩子——`close`、`prev`、
+`next`、`download`、`scale`、`zoom`、`rotate`、`retry`、`img`、`link`、`current`、
+`total`、`name`、`stage`、`content`、`ls`、`list`、`loader`、`error`、`thumbs`——
+即使类名被改也能定位。颜色、间距、强调色都是普通 CSS 值，直接在自己样式表里覆盖即可，
+不需要 CSS 变量。
 
 ## 浏览器支持
 

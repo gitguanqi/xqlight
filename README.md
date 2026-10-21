@@ -19,8 +19,8 @@ npm install xqlight
 ## Use in the browser
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/xqlight@0.4.0/lib/css/xqlight.min.css">
-<script src="https://unpkg.com/xqlight@0.4.0/lib/js/xqlight.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/xqlight@0.5.0/lib/css/xqlight.min.css">
+<script src="https://unpkg.com/xqlight@0.5.0/lib/js/xqlight.min.js"></script>
 ```
 
 Mark up a gallery, then construct the lightbox. `imgCls` is the selector of the
@@ -44,7 +44,8 @@ the end of `<body>`. If you inject images later, call `lightbox.refresh()`.
 
 | Option | Type | Required | Description |
 | --- | --- | --- | --- |
-| `imgCls` | `string` | yes | Selector of the gallery container. Images are found with `<imgCls> img`. |
+| `imgCls` | `string` | yes | Selector of the gallery container. Images are found with `<imgCls> img`. Each `<img>` may carry `data-thumb="<url>"` to use a smaller thumbnail. |
+| `thumbnails` | `boolean \| 'auto'` | no | Thumbnail strip. `true` always shows it, `false` turns it off, `'auto'` (default) shows it when the gallery holds 2–20 images. |
 
 A missing or unusable `imgCls` only logs a warning — the constructor never throws.
 
@@ -57,15 +58,51 @@ A missing or unusable `imgCls` only logs a warning — the constructor never thr
 | `prevImg()` / `nextImg()` | Move by one, wrapping at both ends. |
 | `goTo(index)` | Jump to an index. |
 | `zoom(direction)` | `1` zooms in, `-1` zooms out, clamped to 0.4×–3×. |
-| `scaleImg()` | Toggle fullscreen. |
+| `setScale(value)` | Set the zoom level directly; returning to 1× resets the pan offset. |
+| `toggleZoom()` | Toggle between 1× and the click-zoom level (what clicking the image does). |
+| `rotate(step?)` | Rotate 90° clockwise (0 → 90 → 180 → 270 → 0); pan offsets reset, rotation resets on image switch. Negative values rotate counter-clockwise. |
+| `scaleImg()` | Toggle fullscreen. Fullscreen applies to the lightbox root, not the page. |
 | `downloadImg(url?, name?)` | Download the current (or given) image. Returns a `Promise<boolean>`. |
 | `refresh()` | Re-scan the gallery after the DOM changed. |
 | `destroy()` | Remove listeners and nodes. Safe to call twice. |
 
 ### Keyboard
 
-When the lightbox is open: `Esc` closes, `←` / `→` switch images, `+` / `-` zoom.
-The wheel zooms only while the lightbox is open and never scrolls the page behind it.
+When the lightbox is open: `Esc` closes, `←` / `→` switch images, `Home` / `End`
+jump to the first / last image, `+` / `-` zoom, `R` rotates 90° clockwise. `Tab`
+cycles inside the lightbox; `Enter` / `Space` activate the focused control (close,
+arrows, download, zoom, rotate, fullscreen, retry). The wheel zooms only while the
+lightbox is open and never scrolls the page behind it — touchpad events are
+accumulated so one gesture equals one step.
+
+### Pointer interactions
+
+- Click the backdrop to close; clicking the image, arrows, title or thumbnails does not.
+- Click the image to toggle between 1× and 2×. When zoomed in, drag to pan — panning
+  is clamped so the image cannot fly out of view.
+- On touch devices, swipe horizontally to switch images.
+
+### States & CSS hooks
+
+The root carries `data-xqlight-status="idle | loading | loaded | error"`. The CSS
+shows a spinner while `loading`, fades the image in on `loaded`, and reveals an
+error card with a Retry button (`[data-xqlight="retry"]`) on `error`. Adjacent
+images are preloaded in the background.
+
+The title bar carries five controls: zoom (magnifier, switches to "restore" while
+zoomed), rotate (a CSS-drawn circular arrow, no extra font weight), download,
+fullscreen, and close.
+
+Other hooks you can style against: `[data-xqlight="thumbs"]` (the thumbnail strip,
+`role="group"`), `[data-xqlight-thumb="<index>"]` (each thumb, `aria-current` marks
+the active one), `.lightbox-img-zoomed` (applied while the image is above 1×; also
+switches the cursor to grab/grabbing), and `.lightbox-img-rotated` (applied while
+the image has a non-zero rotation).
+
+The open animation is implemented as child-element keyframes, so opening feels
+smooth while closing is an instant hide (by design, to keep the
+`.lightbox` / `.lightbox.active` display contract simple). All motion is disabled
+under `prefers-reduced-motion: reduce`.
 
 ## Use as a module
 
@@ -82,7 +119,7 @@ const XqLightBox = require('xqlight');
 Pure helpers are exported for reuse:
 
 ```js
-import XqLightBox, { clampScale, wrapIndex, buildFileName } from 'xqlight';
+import XqLightBox, { clampScale, wrapIndex, buildFileName, buildTransform, accumulateWheel } from 'xqlight';
 ```
 
 The same helpers are available on the global build as `XqLightBox.utils`.
@@ -159,6 +196,7 @@ export default {
 | `currentUrl` | `String` | `''` | Explicit image URL; wins when the list item has none. |
 | `currentIndex` | `Number` | `0` | Index shown when the lightbox opens. |
 | `currentText` | `String` | `''` | Explicit caption. |
+| `thumbnails` | `Boolean \| String` | `'auto'` | Same semantics as the constructor option; list items may set `thumb` for a smaller preview. |
 
 ### Events
 
@@ -185,10 +223,21 @@ No Sass toolchain is required — the component ships no `<style lang="scss">` b
 
 The stylesheet is the single source of truth for both builds; the browser build adds
 `.active` to the root and the Vue component binds the same class, so the two never
-fight each other. Class names are a public contract:
+fight each other. You must include `lib/css/xqlight.css` (or `xqlight.min.css`) —
+the component ships no inline styles.
+
+Class names are a public contract:
 
 `.lightbox`, `.lightbox-title`, `.lightbox-content`, `.lightbox-ls`, `.lightbox-list`,
-`.lightbox-img`, `.lightbox-arrow`, `.lightbox-link`, `.lightbox-name`.
+`.lightbox-img`, `.lightbox-arrow`, `.lightbox-link`, `.lightbox-name`,
+`.lightbox-thumbs`, `.lightbox-thumb`, `.lightbox-loader`, `.lightbox-error`.
+
+Beyond classes, every structural and interactive node carries a `data-xqlight="<role>"`
+hook — `close`, `prev`, `next`, `download`, `scale`, `zoom`, `rotate`, `retry`,
+`img`, `link`, `current`, `total`, `name`, `stage`, `content`, `ls`, `list`,
+`loader`, `error`, `thumbs` — so you can target nodes without class names. Colors,
+spacing and the accent are plain CSS values — override them in your own stylesheet,
+no CSS variables required.
 
 ## Browser support
 
