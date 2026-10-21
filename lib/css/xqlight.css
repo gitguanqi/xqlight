@@ -1,19 +1,17 @@
-/*
- * @Author: fegq
- * @Date: 2021-09-11 14:43:58
- * @LastEditors: fegq
- * @LastEditTime: 2021-09-21 07:54:06
- * @Description: This is a light plugin style!
- * @Version: 0.3.3
+/*!
+ * xqlight v0.4.0
+ * Lightbox stylesheet shared by the browser build and the Vue wrapper.
+ * @author fegq
+ * @license MIT
  */
- @font-face {
-  font-family: "plugin"; /* Project id 3684399 */
-  src: url('../fonts/iconfont.eot?t=1664700514597'); /* IE9 */
-  src: url('../fonts/iconfont.eot?t=1664700514597#iefix') format('embedded-opentype'), /* IE6-IE8 */
-       url('../fonts/iconfont.woff2?t=1664700514597') format('woff2'),
+
+@font-face {
+  font-family: "plugin";
+  /* Project id 3684399。只保留现代浏览器需要的格式，eot/svg 已移除。 */
+  src: url('../fonts/iconfont.woff2?t=1664700514597') format('woff2'),
        url('../fonts/iconfont.woff?t=1664700514597') format('woff'),
-       url('../fonts/iconfont.ttf?t=1664700514597') format('truetype'),
-       url('../fonts/iconfont.svg?t=1664700514597#plugin') format('svg');
+       url('../fonts/iconfont.ttf?t=1664700514597') format('truetype');
+  font-display: swap;
 }
 
 .plugin {
@@ -56,49 +54,73 @@
   content: "\e641";
 }
 
+/* 根节点默认隐藏，`.active` 是唯一可见状态。
+   浏览器版由脚本添加该类，Vue 版由 `:class` 绑定，两者共用同一套样式契约。 */
 .lightbox {
   position: fixed;
   top: 0;
-  left: 0;
-  bottom: 0;
   right: 0;
+  bottom: 0;
+  left: 0;
   display: none;
   width: 100%;
+  height: 100%;
   height: 100vh;
   background: rgba(0, 0, 0, .7);
   overflow: hidden;
   z-index: 9999;
+  color: #fff;
+  font-size: 16px;
 }
 
 .lightbox.active {
-  display: block;
+  display: flex;
+  flex-direction: column;
 }
 
 .lightbox-title {
   display: flex;
+  flex: 0 0 auto;
+  align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  box-sizing: border-box;
   padding: 0 20px;
   width: 100%;
   height: 60px;
   line-height: 60px;
   color: #fff;
-  font-size: 20px;
+  font-size: 16px;
+}
+
+.lightbox-title-tip {
+  flex: 0 0 auto;
+}
+
+.lightbox-title-num {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lightbox-name {
+  display: inline;
 }
 
 .lightbox-title p {
-  position: relative;
-  margin: 0;
   display: flex;
-  justify-content: space-between;
+  flex: 0 0 auto;
   align-items: center;
-  margin-right: 20px;
-  width: 120px;
+  margin: 0 20px 0 0;
   height: 60px;
 }
 
 .lightbox-title p i {
   display: inline-block;
-  width: 60px;
+  width: 44px;
   height: 60px;
   line-height: 60px;
   text-align: center;
@@ -107,41 +129,84 @@
   cursor: pointer;
 }
 
-.lightbox-title p i.active {
-  display: inline-block;
-}
-
 .lightbox-content {
-  flex: 1;
-  position: relative;
   display: flex;
-  justify-content: center;
+  flex: 1 1 auto;
   align-items: center;
+  justify-content: center;
   box-sizing: border-box;
-  padding: 20px;
+  padding: 0 20px 20px;
   width: 100%;
-  height: 100%;
+  min-height: 0;
 }
 
 .lightbox-ls {
   position: relative;
-  top: 20px;
-  box-sizing: border-box;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 0;
+  box-sizing: border-box;
+  padding: 0 50px;
   width: 100%;
   height: 100%;
   overflow: hidden;
 }
 
-.lightbox-ls .lightbox-arrow {
+/* 库自带列表重置：宿主页面即使没有自己的 reset，也不会出现项目符号与缩进。 */
+.lightbox-list {
   display: flex;
-  justify-content: center;
+  flex: 1 1 auto;
   align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  list-style: none;
+}
+
+.lightbox-list li {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  list-style: none;
+}
+
+.lightbox-img {
+  display: block;
+  max-width: 700px;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.lightbox-arrow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 50px;
   height: 100%;
   cursor: pointer;
+}
+
+.lightbox-arrow-left {
+  left: 0;
+}
+
+.lightbox-arrow-right {
+  right: 0;
 }
 
 .lightbox-arrow i {
@@ -150,38 +215,48 @@
   font-weight: bold;
 }
 
-.lightbox-ls ul {
-  flex: 1;
-  width: 100%;
-  height: 85%;
-  overflow: hidden;
+.lightbox [role="button"]:focus-visible {
+  outline: 2px solid #4aa8ff;
+  outline-offset: -2px;
 }
 
-.lightbox-ls ul li {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  flex-shrink: 0;
-  width: 100%;
-  height: 100%;
-  text-align: center;
-}
+@media all and (max-width: 768px) {
+  .lightbox-title {
+    gap: 8px;
+    padding: 0 10px;
+    height: 52px;
+    line-height: 52px;
+    font-size: 14px;
+  }
 
-.lightbox-ls ul li img {
-  display: inline-block;
-  max-width: 700px;
-  width: auto;
-  height: auto;
-}
+  .lightbox-title p {
+    margin-right: 0;
+  }
 
-.lightbox-ls ul li .lightbox-arrow {
-  position: absolute;
-  top: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 50px;
-  height: 100%;
-  cursor: pointer;
+  .lightbox-title p i {
+    width: 36px;
+    height: 52px;
+    line-height: 52px;
+    font-size: 18px;
+  }
+
+  .lightbox-content {
+    padding: 0 8px 8px;
+  }
+
+  .lightbox-ls {
+    padding: 0 36px;
+  }
+
+  .lightbox-arrow {
+    width: 36px;
+  }
+
+  .lightbox-arrow i {
+    font-size: 26px;
+  }
+
+  .lightbox-img {
+    max-width: 100%;
+  }
 }

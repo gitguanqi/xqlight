@@ -1,30 +1,76 @@
 <template>
-    <div class="lightbox" v-show="showLightBox">
+    <div
+        class="lightbox"
+        :class="{ active: isOpen }"
+        role="dialog"
+        aria-modal="true"
+        :aria-hidden="isOpen ? 'false' : 'true'"
+        :aria-label="title || lightTitle || '图片预览'"
+        data-xqlight-root="1"
+        @wheel="handleWheel"
+    >
         <div class="lightbox-title">
-            <span class="lightbox-title-tip">
-                {{ lightTitle || '图片预览' }}
-            </span>
-            <span class="lightbox-title-num">({{ currentImgIndex+1 || 0 }}/{{ lightImgs.length || 0 }})【{{currentTitle||'IMG'+currentImgIndex+1}}】</span>
+            <span class="lightbox-title-tip">{{ lightTitle || '图片预览' }}</span>
+            <div class="lightbox-title-num">
+                (<strong data-xqlight="current">{{ isOpen ? index + 1 : 0 }}</strong>/<strong data-xqlight="total">{{ total }}</strong>)
+                <span class="lightbox-name">【<span data-xqlight="name">{{ currentName }}</span>】</span>
+            </div>
             <p>
-                <i class="lightbox-download plugin plugin-download" @click="downloadImg"></i>
-                <i v-show="isScale" @click="scaleImg" class="plugin plugin-fullscreen-exit"></i>
-                <i v-show="!isScale" @click="scaleImg" class="plugin plugin-fullscreen"></i>
-                <i @click="closeLightBox" class="plugin plugin-times"></i>
+                <i
+                    class="lightbox-download plugin plugin-download"
+                    role="button"
+                    tabindex="0"
+                    aria-label="下载图片"
+                    @click="downloadImg"
+                ></i>
+                <i
+                    :class="['lightbox-scale', 'plugin', isScale ? 'plugin-fullscreen-exit' : 'plugin-fullscreen']"
+                    role="button"
+                    tabindex="0"
+                    :aria-label="isScale ? '退出全屏' : '全屏显示'"
+                    @click="scaleImg"
+                ></i>
+                <i
+                    ref="close"
+                    class="lightbox-close plugin plugin-times"
+                    role="button"
+                    tabindex="0"
+                    aria-label="关闭"
+                    @click="closeLightBox"
+                ></i>
             </p>
         </div>
         <div class="lightbox-content">
             <div class="lightbox-ls">
-                <div class="lightbox-arrow la-left" @click="prevImg">
+                <div
+                    class="lightbox-arrow lightbox-arrow-left"
+                    role="button"
+                    tabindex="0"
+                    aria-label="上一张"
+                    @click="prevImg"
+                >
                     <i class="plugin plugin-arrow-left"></i>
                 </div>
-                <ul>
-                    <li @click="scaleMouseImg" :style="{'cursor': `${currentScale > 0.4 ? 'zoom-out' : 'zoom-in'}`}">
-                        <a :href="currentSrc || ''" target="_blank">
-                            <img :style="{'transform': `scale(${currentScale})`, 'cursor': `${currentScale > 0.4 ? 'zoom-out' : 'zoom-in'}`}" :src="currentSrc || ''" alt="">
+                <ul class="lightbox-list">
+                    <li>
+                        <a class="lightbox-link" :href="src || ''" target="_blank" rel="noopener">
+                            <img
+                                class="lightbox-img"
+                                :src="src || ''"
+                                :alt="currentName"
+                                :style="{ transform: `scale(${currentScale})` }"
+                                @click="toggleZoom"
+                            />
                         </a>
                     </li>
                 </ul>
-                <div class="lightbox-arrow la-right" @click="nextImg">
+                <div
+                    class="lightbox-arrow lightbox-arrow-right"
+                    role="button"
+                    tabindex="0"
+                    aria-label="下一张"
+                    @click="nextImg"
+                >
                     <i class="plugin plugin-arrow-right"></i>
                 </div>
             </div>
@@ -33,360 +79,210 @@
 </template>
 
 <script>
+// 纯逻辑（索引环绕、缩放夹紧、下载、全屏）由浏览器版核心提供，
+// 组件只做 Vue 侧的状态与事件适配，避免同一份算法维护两遍。
+import {
+    ZOOM_STEP,
+    clampScale,
+    wrapIndex,
+    buildFileName,
+    downloadImage,
+    toggleFullscreen,
+    exitFullscreen
+} from '../js/xqlight.esm.mjs';
+
 export default {
+    name: 'XqLightbox',
     props: {
+        /** 标题栏文字 */
         lightTitle: {
-            type: String
+            type: String,
+            default: ''
         },
+        /** 是否显示灯箱，由父组件控制 */
         showLightBox: {
             type: Boolean,
-            defalut: false
+            default: false
         },
+        /** 图片列表，元素支持 { src | url, name | title } */
         lightImgs: {
             type: Array,
-            defalut: []
+            default: function () {
+                return [];
+            }
         },
+        /** 当前图片地址；不传时取 lightImgs[currentIndex] */
         currentUrl: {
             type: String,
-            defalut: ''
+            default: ''
         },
+        /** 当前图片索引 */
         currentIndex: {
             type: Number,
-            defalut: 0
+            default: 0
         },
+        /** 当前图片标题；不传时取 lightImgs[currentIndex] 的 name/title */
         currentText: {
             type: String,
-            defalut: 'IMG'
-        },
+            default: ''
+        }
     },
-    data() {
+    // Vue 2 忽略该选项，Vue 3 用它声明事件
+    emits: ['hideLightBox', 'update:currentIndex', 'update:currentUrl', 'change'],
+    data: function () {
         return {
-            isMouseUp: '',
-            currentImgIndex: 0,
+            index: 0,
             currentScale: 1,
-            currentSrc: '',
             isScale: false,
-            currentTitle: '',
+            src: '',
+            title: '',
+            // 内部状态放在 data 里，Vue 2/3 都能安全读写（下划线开头的 key 不会被代理）
+            scrollLocked: false,
+            previousOverflow: '',
+            torn: false
+        };
+    },
+    computed: {
+        total: function () {
+            return this.list.length;
+        },
+        list: function () {
+            return Array.isArray(this.lightImgs) ? this.lightImgs : [];
+        },
+        isOpen: function () {
+            return Boolean(this.showLightBox);
+        },
+        currentName: function () {
+            return this.title || this.currentText || ('IMG' + (this.index + 1));
         }
     },
     watch: {
-        'currentUrl': function (val) {
-            this.currentSrc = val;
-            this.scrollBar(false);
+        currentUrl: function (value) {
+            if (value) this.src = value;
         },
-        'currentIndex': function (val) {
-            this.currentImgIndex = val;
-            this.scrollBar(false);
+        currentIndex: function (value) {
+            this.goTo(value, false);
         },
-        'currentText': function (val) {
-            this.currentTitle = val;
-            this.scrollBar(false);
+        currentText: function (value) {
+            if (value) this.title = value;
         },
+        showLightBox: function (value) {
+            this.toggleScroll(value);
+        }
     },
-    mounted() {
-        window.addEventListener('mousewheel',this.handleScroll);
-        if (this.currentIndex) {
-            this.currentImgIndex = this.currentIndex;
-        }
-        if (this.currentText) {
-            this.currentTitle = this.currentText;
-        }
-        if (this.lightImgs.length) {
-            this.currentSrc = this.lightImgs[this.currentImgIndex].src || 
-            this.lightImgs[this.currentImgIndex].url;
-        }
-        this.scrollBar(true);
+    mounted: function () {
+        this.goTo(this.currentIndex, false);
+        this.toggleScroll(this.isOpen);
+        document.addEventListener('keydown', this.handleKeydown);
+    },
+    // Vue 3 用 beforeUnmount，Vue 2 用 beforeDestroy，只有对应那个会触发
+    beforeUnmount: function () {
+        this.teardown();
+    },
+    beforeDestroy: function () {
+        this.teardown();
     },
     methods: {
-        handleScroll (e) {
-            this.isMouseUp = e.deltaY > 0 ? false : true;
-            if (this.isMouseUp && this.currentScale < 3) {
-                this.currentScale += 0.2;
+        /**
+         * 跳到指定索引并同步当前地址/标题。
+         * @param {number} index
+         * @param {boolean} emit 是否向父组件回传索引变化
+         */
+        goTo: function (index, emit) {
+            const item = this.total ? this.list[wrapIndex(index, this.total)] : null;
+            this.index = this.total ? wrapIndex(index, this.total) : 0;
+            if (item) {
+                this.src = item.src || item.url || '';
+                this.title = item.title || item.name || '';
+            } else if (this.currentUrl) {
+                this.src = this.currentUrl;
             }
-            if (!this.isMouseUp && this.currentScale > 0.4) {
-                this.currentScale -= 0.2;
+            this.currentScale = 1;
+            if (emit) {
+                this.$emit('update:currentIndex', this.index);
+                this.$emit('update:currentUrl', this.src);
+                this.$emit('change', { index: this.index, item: item });
             }
         },
-        scaleImg () {
+        prevImg: function () {
+            this.goTo(this.index - 1, true);
+        },
+        nextImg: function () {
+            this.goTo(this.index + 1, true);
+        },
+        /**
+         * 图片点击：在两档之间切换，不再两个分支互相抵消。
+         */
+        toggleZoom: function () {
+            this.currentScale = this.currentScale > 1 ? 1 : clampScale(2);
+        },
+        /**
+         * 滚轮缩放，只在灯箱打开时拦截页面滚动。
+         * @param {WheelEvent} event
+         */
+        handleWheel: function (event) {
+            if (!this.isOpen) return;
+            if (event && typeof event.preventDefault === 'function') event.preventDefault();
+            const delta = Number(event && event.deltaY) || 0;
+            this.currentScale = clampScale(this.currentScale + (delta > 0 ? -ZOOM_STEP : ZOOM_STEP));
+        },
+        scaleImg: function () {
             this.isScale = !this.isScale;
-            if (!this.isScale) {
-                this.fullScreenCancel();
-            } else {
-                this.fullScreenOpen();
-            }
-        },
-        scaleMouseImg () {
-            if (this.currentScale < 3) {
-                this.currentScale += 0.2;
-            }
-            if (this.currentScale > 0.4) {
-                this.currentScale -= 0.2;
-            }
+            if (this.isScale) toggleFullscreen();
+            else exitFullscreen();
         },
         async downloadImg () {
-            let url = this.currentSrc;
-            let extName = this.currentSrc.split('/');
-            extName = extName[extName.length-1];
-            extName = extName.indexOf('?') > -1 ? extName.split('?')[0] : extName;
-            let data = await fetch(url);
-            let blob = await data.blob();
-            let donwBtn = document.createElement('a');
-            donwBtn.download = 'xqlight-'+extName;
-            donwBtn.href = URL.createObjectURL(blob);
-            document.body.appendChild(donwBtn);
-            donwBtn.click();
-            URL.revokeObjectURL(blob);
-            document.body.removeChild(donwBtn);
+            if (!this.src) return;
+            await downloadImage(this.src, buildFileName(this.src));
         },
-        closeLightBox () {
-            this.scrollBar(true);
+        closeLightBox: function () {
+            this.currentScale = 1;
             this.$emit('hideLightBox');
         },
-        prevImg () {
-            if (this.currentImgIndex == 0) {
-                this.currentImgIndex = this.lightImgs.length;
-            }
-            if (this.currentImgIndex > 0 && this.currentImgIndex <= this.lightImgs.length) {
-                this.currentImgIndex -=1;
-            }
-            this.currentScale = 1;
-            this.currentSrc = this.lightImgs[this.currentImgIndex].src ||
-            this.lightImgs[this.currentImgIndex].url;
-            this.currentTitle = this.lightImgs[this.currentImgIndex].title ||
-            this.lightImgs[this.currentImgIndex].name;
+        /**
+         * 键盘操作：Esc 关闭、左右切换。
+         * @param {KeyboardEvent} event
+         */
+        handleKeydown: function (event) {
+            if (!this.isOpen) return;
+            if (event.key === 'Escape') this.closeLightBox();
+            else if (event.key === 'ArrowLeft') this.prevImg();
+            else if (event.key === 'ArrowRight') this.nextImg();
         },
-        nextImg () {
-            if (this.currentImgIndex == this.lightImgs.length - 1) {
-                this.currentImgIndex = 0;
-            } else {
-                this.currentImgIndex +=1;
-            }
-            this.currentScale = 1;
-            this.currentSrc = this.lightImgs[this.currentImgIndex].src ||
-            this.lightImgs[this.currentImgIndex].url;
-            this.currentTitle = this.lightImgs[this.currentImgIndex].title ||
-            this.lightImgs[this.currentImgIndex].name;
-        },
-        fullScreenOpen () {
-            var docElm = document.documentElement;
-            if (docElm.requestFullscreen) {
-                docElm.requestFullscreen();
-            } else if (docElm.msRequestFullscreen) {
-                docElm.msRequestFullscreen();
-            } else if (docElm.mozRequestFullScreen) {
-                docElm.mozRequestFullScreen();
-            } else if (docElm.webkitRequestFullScreen) {
-                docElm.webkitRequestFullScreen();
-            }
-        },
-
-        fullScreenCancel () {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            } else if (document.msExitFullscreen) {
-                document.msExitFullscreen();
-            } else if (document.mozCancelFullScreen) {
-                document.mozCancelFullScreen();
-            } else if (document.webkitCancelFullScreen) {
-                document.webkitCancelFullScreen();
-            }
-        },
-        scrollBar (flag) {
-            if (flag) {
-                document.body.style.overflow = '';
-            } else {
+        /**
+         * 锁定/恢复页面滚动，并保存打开前的滚动位置。
+         * @param {boolean} locked
+         */
+        toggleScroll: function (locked) {
+            if (typeof document === 'undefined' || !document.body) return;
+            if (locked) {
+                if (!this.scrollLocked) {
+                    this.previousOverflow = document.body.style.overflow || '';
+                    this.scrollLocked = true;
+                }
                 document.body.style.overflow = 'hidden';
+                this.focusClose();
+                return;
+            }
+            if (this.scrollLocked) {
+                document.body.style.overflow = this.previousOverflow || '';
+                this.scrollLocked = false;
+            }
+        },
+        focusClose: function () {
+            const node = this.$refs.close;
+            if (node && typeof node.focus === 'function') node.focus();
+        },
+        teardown: function () {
+            if (this.torn) return;
+            this.torn = true;
+            document.removeEventListener('keydown', this.handleKeydown);
+            this.toggleScroll(false);
+            if (this.isScale) {
+                this.isScale = false;
+                exitFullscreen();
             }
         }
-    },
-}
+    }
+};
 </script>
-
-<style scoped>
-@font-face {
-  font-family: "plugin"; /* Project id 3684399 */
-  src: url('../fonts/iconfont.eot?t=1664700514597'); /* IE9 */
-  src: url('../fonts/iconfont.eot?t=1664700514597#iefix') format('embedded-opentype'), /* IE6-IE8 */
-       url('../fonts/iconfont.woff2?t=1664700514597') format('woff2'),
-       url('../fonts/iconfont.woff?t=1664700514597') format('woff'),
-       url('../fonts/iconfont.ttf?t=1664700514597') format('truetype'),
-       url('../fonts/iconfont.svg?t=1664700514597#plugin') format('svg');
-}
-
-.plugin {
-  font-family: "plugin" !important;
-  font-size: 16px;
-  font-style: normal;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-.plugin-search-minus:before {
-  content: "\e82c";
-}
-
-.plugin-search-plus:before {
-  content: "\e82d";
-}
-
-.plugin-times:before {
-  content: "\e65c";
-}
-
-.plugin-fullscreen-exit:before {
-  content: "\e7ec";
-}
-
-.plugin-download:before {
-  content: "\e66c";
-}
-
-.plugin-arrow-left:before {
-  content: "\e685";
-}
-
-.plugin-arrow-right:before {
-  content: "\e687";
-}
-
-.plugin-fullscreen:before {
-  content: "\e641";
-}
-</style>
-
-<style lang="scss" scoped>
-    $white: #fff;
-    .lightbox {
-        position: fixed;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-        width: 100%;
-        height: 100vh;
-        background: rgba($color: #000000, $alpha: .7);
-        overflow: hidden;
-        z-index: 9999;
-        .lightbox-title {
-            display: flex;
-            justify-content: space-between;
-            padding: 0 20px;
-            width: 100%;
-            height: 60px;
-            line-height: 60px;
-            color: $white;
-            font-size: 18px;
-            overflow: hidden;
-            span {
-                display: inline-block;
-                font-size: 16px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                &.lightbox-title-tip {
-                    width: 65px;
-                }
-                &.lightbox-title-num {
-                    width: 600px;
-                    text-align: center;
-                }
-            }
-            p {
-                position: relative;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-right: 20px;
-                width: 120px;
-                height: 60px;
-                i {
-                    display: inline-block;
-                    width: 60px;
-                    height: 60px;
-                    line-height: 60px;
-                    text-align: center;
-                    font-size: 20px;
-                    color: $white;
-                    cursor: pointer;
-                }
-            }
-        }
-        .lightbox-content {
-            flex: 1;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-sizing: border-box;
-            padding: 20px;
-            width: 100%;
-            height: 100%;
-            .lightbox-ls {
-                box-sizing: border-box;
-                padding: 0 50px;
-                width: 100%;
-                height: 100%;
-                overflow: hidden;
-                ul {
-                    flex: 1;
-                    width: 100%;
-                    height: 90%;
-                    overflow: hidden;
-                    li {
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        flex-shrink: 0;
-                        width: 100%;
-                        height: 100%;
-                        text-align: center;
-                        img {
-                            display: inline-block;
-                            max-width: 700px;
-                            width: auto;
-                            height: auto;
-                        }
-                    }
-                }
-                .lightbox-arrow {
-                    position: absolute;
-                    top: 0;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    width: 50px;
-                    height: 100%;
-                    cursor: pointer;
-                    i {
-                        font-size: 35px;
-                        color: $white;
-                    }
-                    &.la-left {
-                        left: 0;
-                    }
-                    &.la-right {
-                        right: 0;
-                    }
-                }
-            }
-        }
-    }
-    
-    @media all and (max-width:768px) and (min-width: 319px) {
-        .lightbox {
-            .lightbox-title {
-                span {
-                    &.lightbox-title-num {
-                        flex: 1;
-                    }
-                }
-            }
-            .lightbox-content {
-                .lightbox-ls {
-                    width: 95%;
-                    height: 60%;
-                }
-            }
-        }
-    }
-</style>

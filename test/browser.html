@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xqlight · UMD 浏览器构建</title>
+    <link rel="icon" type="image/svg+xml" href="./icon.svg">
+    <link rel="stylesheet" href="../lib/css/xqlight.min.css">
+    <link rel="stylesheet" href="./css/demo.css">
+</head>
+<body>
+    <header class="demo-header">
+        <img class="demo-logo" src="./icon.svg" alt="xqlight" width="28" height="28">
+        <nav>
+            <a href="./index.html">索引</a>
+            <a href="./browser.html" aria-current="page">Browser / UMD</a>
+            <a href="./esm.html">ESM</a>
+            <a href="./vue2.html">Vue 2</a>
+            <a href="./vue3.html">Vue 3</a>
+        </nav>
+        <span class="demo-status" data-suite-status data-status="pending" aria-live="polite">PENDING</span>
+    </header>
+
+    <main>
+        <h1>UMD 浏览器构建</h1>
+        <p class="demo-lead">通过 <code>&lt;script&gt;</code> 加载 <code>lib/js/xqlight.min.js</code>，使用全局构造器。</p>
+
+        <section class="demo-panel">
+            <h2>演示</h2>
+            <ul class="imgs">
+                <li><img src="./img/a1.jpg" alt="示例图 1"></li>
+                <li><img src="./img/a2.jpeg" alt="示例图 2"></li>
+                <li><img src="./img/a3.jpeg" alt="示例图 3"></li>
+            </ul>
+            <p class="demo-note">点击任意图片打开；滚轮或 <code>+</code>/<code>-</code> 缩放；方向键切换；<code>Esc</code> 关闭。</p>
+        </section>
+
+        <section class="demo-panel">
+            <h2>检查项</h2>
+            <ul class="demo-checks" data-suite-results></ul>
+        </section>
+    </main>
+
+    <script src="./js/runner.js"></script>
+    <script src="../lib/js/xqlight.min.js"></script>
+    <script>
+        (async function () {
+            const suite = XqSuite.create();
+            const IMG = './img/a1.jpg';
+
+            suite.check('全局构造器已导出', () => typeof window.XqLightBox === 'function');
+            if (typeof window.XqLightBox !== 'function') {
+                suite.finish();
+                return;
+            }
+            suite.check('构造器带版本号', () => ({
+                ok: window.XqLightBox.version === '0.4.0',
+                detail: String(window.XqLightBox.version)
+            }));
+
+            const box = new XqLightBox({ imgCls: '.imgs' });
+            suite.check('注入自己的根节点', () => box.root instanceof HTMLElement && document.body.contains(box.root));
+            suite.check('根节点下没有嵌套的 .lightbox', () => box.root.querySelectorAll('.lightbox').length === 0);
+            suite.check('不再写入重复 id', () => box.root.querySelectorAll('[id]').length === 0);
+
+            await suite.checkAsync('首张图片可解码', () => suite.waitForImage(IMG));
+            suite.check('扫描到 3 张图片', () => box.imgList.length === 3, String(box.imgList.length));
+
+            box.showLightBox(0);
+            suite.check('打开后进入 active 状态', () => box.root.classList.contains('active'));
+            suite.check('锁定页面滚动', () => document.body.style.overflow === 'hidden');
+            suite.check('计数显示 1 / 3', () => {
+                const current = box.root.querySelector('[data-xqlight="current"]').textContent;
+                const total = box.root.querySelector('[data-xqlight="total"]').textContent;
+                return current === '1' && total === '3';
+            });
+
+            box.nextImg();
+            suite.check('下一张切到第 2 张', () => box.root.querySelector('[data-xqlight="current"]').textContent === '2');
+
+            box.handleScroll({ deltaY: -1, preventDefault: function () {} });
+            await suite.checkAsync('滚轮放大到 1.2 倍', async () => {
+                await suite.nextFrame();
+                return box.root.querySelector('[data-xqlight="img"]').style.transform === 'scale(1.2)';
+            });
+
+            box.nextImg();
+            suite.check('切图后缩放复位', () => box.root.querySelector('[data-xqlight="img"]').style.transform === 'scale(1)');
+
+            suite.check('切换全屏不抛错', () => {
+                box.scaleImg();
+                box.scaleImg();
+                return true;
+            });
+
+            box.closeLightBox();
+            suite.check('关闭后移除 active', () => !box.root.classList.contains('active'));
+            suite.check('关闭后恢复滚动', () => document.body.style.overflow === '');
+
+            const disposable = new XqLightBox({ imgCls: '.imgs' });
+            const disposableRoot = disposable.root;
+            disposable.destroy();
+            suite.check('销毁后节点被移除', () => !document.body.contains(disposableRoot));
+            suite.check('演示实例仍然存活', () => document.body.contains(box.root));
+
+            suite.check('页面没有横向溢出', () => suite.noHorizontalOverflow());
+
+            window.__demoReady = true;
+            suite.finish();
+        })();
+    </script>
+</body>
+</html>

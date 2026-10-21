@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xqlight · ESM 构建</title>
+    <link rel="icon" type="image/svg+xml" href="./icon.svg">
+    <link rel="stylesheet" href="../lib/css/xqlight.min.css">
+    <link rel="stylesheet" href="./css/demo.css">
+</head>
+<body>
+    <header class="demo-header">
+        <img class="demo-logo" src="./icon.svg" alt="xqlight" width="28" height="28">
+        <nav>
+            <a href="./index.html">索引</a>
+            <a href="./browser.html">Browser / UMD</a>
+            <a href="./esm.html" aria-current="page">ESM</a>
+            <a href="./vue2.html">Vue 2</a>
+            <a href="./vue3.html">Vue 3</a>
+        </nav>
+        <span class="demo-status" data-suite-status data-status="pending" aria-live="polite">PENDING</span>
+    </header>
+
+    <main>
+        <h1>ESM 构建</h1>
+        <p class="demo-lead">用 <code>&lt;script type="module"&gt;</code> 导入 <code>lib/js/xqlight.esm.min.mjs</code>，同时校验默认导出与具名导出指向同一个构造器。</p>
+
+        <section class="demo-panel">
+            <h2>演示</h2>
+            <ul class="imgs">
+                <li><img src="./img/a1.jpg" alt="示例图 1"></li>
+                <li><img src="./img/a2.jpeg" alt="示例图 2"></li>
+                <li><img src="./img/a3.jpeg" alt="示例图 3"></li>
+            </ul>
+            <p class="demo-note">与 UMD 页面行为一致，差别只在引入方式。</p>
+        </section>
+
+        <section class="demo-panel">
+            <h2>检查项</h2>
+            <ul class="demo-checks" data-suite-results></ul>
+        </section>
+    </main>
+
+    <script src="./js/runner.js"></script>
+    <script type="module">
+        import XqLightBox, { XqLightBox as NamedXqLightBox, clampScale, wrapIndex } from '../lib/js/xqlight.esm.min.mjs';
+
+        const suite = XqSuite.create();
+
+        suite.check('默认导出是构造函数', () => typeof XqLightBox === 'function');
+        suite.check('默认导出与具名导出一致', () => XqLightBox === NamedXqLightBox);
+        suite.check('没有污染全局命名空间', () => typeof window.XqLightBox === 'undefined');
+        suite.check('具名纯函数可用', () => clampScale(9) === 3 && wrapIndex(-1, 3) === 2);
+
+        const box = new XqLightBox({ imgCls: '.imgs' });
+        suite.check('注入自己的根节点', () => box.root instanceof HTMLElement && document.body.contains(box.root));
+        suite.check('扫描到 3 张图片', () => box.imgList.length === 3, String(box.imgList.length));
+
+        await suite.checkAsync('首张图片可解码', () => suite.waitForImage('./img/a2.jpeg'));
+
+        box.showLightBox(1);
+        suite.check('直接打开指定索引', () => box.root.querySelector('[data-xqlight="current"]').textContent === '2');
+        suite.check('渲染正确的图片地址', () => {
+            const src = box.root.querySelector('[data-xqlight="img"]').getAttribute('src');
+            return src === './img/a2.jpeg';
+        });
+
+        box.prevImg();
+        suite.check('上一张回到第 1 张', () => box.root.querySelector('[data-xqlight="current"]').textContent === '1');
+
+        box.closeLightBox();
+        suite.check('关闭后恢复滚动', () => document.body.style.overflow === '');
+
+        window.__demoReady = true;
+        suite.finish();
+    </script>
+</body>
+</html>

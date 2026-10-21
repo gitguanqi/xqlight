@@ -1,19 +1,226 @@
-ul,li {
+/*
+ * xqlight 测试页共用样式。
+ * 刻意不引入任何框架，也不依赖 lib/css 里的类名，避免测试页把库样式“补”好。
+ */
+:root {
+    --demo-bg: #0f1117;
+    --demo-panel: #171a22;
+    --demo-border: #2a2f3a;
+    --demo-text: #e6e9ef;
+    --demo-muted: #9aa4b2;
+    --demo-pass: #3ddc97;
+    --demo-fail: #ff6b6b;
+    --demo-pending: #f0b429;
+    --demo-accent: #4aa8ff;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0 0 64px;
+    min-height: 1200px;
+    background: var(--demo-bg);
+    color: var(--demo-text);
+    font: 14px/1.6 -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.demo-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    background: rgba(15, 17, 23, .92);
+    border-bottom: 1px solid var(--demo-border);
+    backdrop-filter: blur(6px);
+}
+
+.demo-logo {
+    display: block;
+    flex: 0 0 auto;
+}
+
+.demo-header nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1 1 auto;
+}
+
+.demo-header nav a {
+    padding: 4px 10px;
+    border-radius: 999px;
+    color: var(--demo-muted);
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.demo-header nav a:hover {
+    color: var(--demo-text);
+    background: #20242e;
+}
+
+.demo-header nav a[aria-current="page"] {
+    color: #0b0d12;
+    background: var(--demo-accent);
+    font-weight: 600;
+}
+
+.demo-status {
+    flex: 0 0 auto;
+    padding: 3px 10px;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: 12px;
+    letter-spacing: .04em;
+}
+
+.demo-status[data-status="pending"] {
+    color: var(--demo-pending);
+}
+
+.demo-status[data-status="passed"] {
+    color: var(--demo-pass);
+}
+
+.demo-status[data-status="failed"] {
+    color: var(--demo-fail);
+}
+
+main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 20px 0;
+}
+
+h1 {
+    margin: 0 0 4px;
+    font-size: 22px;
+}
+
+h2 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    color: var(--demo-muted);
+    font-weight: 600;
+}
+
+.demo-lead {
+    margin: 0 0 24px;
+    color: var(--demo-muted);
+}
+
+.demo-panel {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: var(--demo-panel);
+    border: 1px solid var(--demo-border);
+    border-radius: 12px;
+}
+
+.demo-checks {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+}
+
+.demo-checks li {
+    padding: 3px 0;
+    border-bottom: 1px dashed #232833;
+    word-break: break-word;
+}
+
+.demo-checks li:last-child {
+    border-bottom: 0;
+}
+
+.demo-checks li.is-pass {
+    color: var(--demo-pass);
+}
+
+.demo-checks li.is-fail {
+    color: var(--demo-fail);
+}
+
+.imgs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    text-align: left;
+}
+
+.imgs li {
     margin: 0;
     padding: 0;
     list-style: none;
 }
-.imgs {
-    text-align: left;
-}
-.imgs li,
+
 .imgs img {
-    margin: 5px;
-    display: inline-block;
-    width: 300px;
-    height: 200px;
+    display: block;
+    width: 180px;
+    height: 120px;
+    object-fit: cover;
+    border: 1px solid var(--demo-border);
+    border-radius: 8px;
+    cursor: zoom-in;
 }
 
-body {
-    height: 1200px;
+.demo-note {
+    margin: 12px 0 0;
+    color: var(--demo-muted);
+    font-size: 12.5px;
+}
+
+.demo-note code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #20242e;
+    font-size: 12px;
+}
+
+.demo-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0 0;
+}
+
+.demo-actions button {
+    padding: 6px 14px;
+    border: 1px solid var(--demo-border);
+    border-radius: 8px;
+    background: #20242e;
+    color: var(--demo-text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.demo-actions button:hover {
+    border-color: var(--demo-accent);
+}
+
+@media (max-width: 640px) {
+    main {
+        padding: 16px 12px 0;
+    }
+
+    .demo-header {
+        padding: 8px 12px;
+    }
+
+    .imgs img {
+        width: calc(50vw - 24px);
+        height: auto;
+    }
 }

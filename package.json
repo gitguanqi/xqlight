@@ -1,27 +1,78 @@
 {
     "name": "xqlight",
-    "version": "0.3.7",
-    "description": "this is a base vue light ui plugins.",
-    "main": "./lib/vue/index.js",
-    "directories": {
-        "example": "example",
-        "lib": "lib"
+    "version": "0.4.0",
+    "description": "A dependency-free image lightbox for the browser, with a Vue 2/3 wrapper.",
+    "main": "./lib/js/xqlight.js",
+    "module": "./lib/js/xqlight.esm.mjs",
+    "browser": "./lib/js/xqlight.js",
+    "unpkg": "./lib/js/xqlight.min.js",
+    "jsdelivr": "./lib/js/xqlight.min.js",
+    "types": "./lib/types/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./lib/types/index.d.ts",
+            "import": "./lib/js/xqlight.esm.mjs",
+            "require": "./lib/js/xqlight.js",
+            "default": "./lib/js/xqlight.js"
+        },
+        "./vue": {
+            "types": "./lib/types/vue/index.d.ts",
+            "import": "./lib/vue/index.js",
+            "default": "./lib/vue/index.js"
+        },
+        "./css/*": "./lib/css/*",
+        "./lib/*": "./lib/*",
+        "./package.json": "./package.json"
     },
+    "files": [
+        "lib",
+        "README.md",
+        "zh.md",
+        "CHANGELOG.md",
+        "LICENSE"
+    ],
+    "sideEffects": [
+        "*.css",
+        "./lib/css/*"
+    ],
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "test:browser": "live-server --port=4001 --host=localhost"
+        "build": "node scripts/build.mjs",
+        "build:check": "node scripts/build.mjs --check",
+        "test": "node --test test/core.test.mjs test/contracts.test.mjs",
+        "verify": "node scripts/dom-behavior-harness.mjs --entry lib/js/xqlight.min.js --scenario all",
+        "test:browser": "node scripts/serve.mjs",
+        "prepublishOnly": "npm run build && npm test && npm run verify"
     },
+    "peerDependencies": {
+        "vue": ">=2.6.0 || >=3.0.0"
+    },
+    "peerDependenciesMeta": {
+        "vue": {
+            "optional": true
+        }
+    },
+    "keywords": [
+        "lightbox",
+        "image",
+        "gallery",
+        "preview",
+        "vue",
+        "vue2",
+        "vue3",
+        "plugin",
+        "no-dependency"
+    ],
+    "author": "gitguanqi",
+    "license": "MIT",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/gitguanqi/xqlight.git"
     },
-    "keywords": [
-        "lightbox"
-    ],
-    "author": "gitguanqi",
-    "license": "MIT",
     "bugs": {
         "url": "https://github.com/gitguanqi/xqlight/issues"
     },
-    "homepage": "https://github.com/gitguanqi/xqlight#readme"
+    "homepage": "https://github.com/gitguanqi/xqlight#readme",
+    "devDependencies": {
+        "esbuild": "^0.28.2"
+    }
 }

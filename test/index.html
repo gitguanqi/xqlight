@@ -1,40 +1,76 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>灯箱示例</title>
+    <title>xqlight · 测试页索引</title>
+    <link rel="icon" type="image/svg+xml" href="./icon.svg">
     <link rel="stylesheet" href="../lib/css/xqlight.min.css">
-    <link rel="stylesheet" href="css/demo.css">
+    <link rel="stylesheet" href="./css/demo.css">
 </head>
 <body>
-    <h2>小奇灯箱示例</h2>
-    <p>下面有一组示例图片，点击便会出现灯箱效果。</p>
-    <ul class="imgs">
-        <li>
-            <img src="./img/a1.jpg?token=12121" alt="">
-        </li>
-        <li>
-            <img src="./img/a2.jpeg" alt="">
-        </li>
-        <li>
-            <img src="./img/a3.jpeg" alt="">
-        </li>
-        <li>
-            <img src="./img/a4.jpeg" alt="">
-        </li>
-        <li>
-            <img src="./img/a5.jpeg" alt="">
-        </li>
-    </ul>
+    <header class="demo-header">
+        <img class="demo-logo" src="./icon.svg" alt="xqlight" width="28" height="28">
+        <nav>
+            <a href="./index.html" aria-current="page">索引</a>
+            <a href="./browser.html">Browser / UMD</a>
+            <a href="./esm.html">ESM</a>
+            <a href="./vue2.html">Vue 2</a>
+            <a href="./vue3.html">Vue 3</a>
+        </nav>
+        <span class="demo-status" data-suite-status data-status="pending" aria-live="polite">PENDING</span>
+    </header>
+
+    <main>
+        <h1>xqlight 测试页</h1>
+        <p class="demo-lead">每条消费路径一个页面，全部加载仓库里提交的构建产物，并在页面上直接给出 PASS / FAIL。</p>
+
+        <section class="demo-panel">
+            <h2>场景</h2>
+            <ul class="demo-checks" data-page-list>
+                <li><a href="./browser.html">browser.html</a> — UMD 构建 + 全局构造器</li>
+                <li><a href="./esm.html">esm.html</a> — ESM 构建，校验默认导出与具名导出一致</li>
+                <li><a href="./vue2.html">vue2.html</a> — Vue 2 挂载、销毁、重新挂载</li>
+                <li><a href="./vue3.html">vue3.html</a> — Vue 3 挂载、销毁、重新挂载</li>
+            </ul>
+            <p class="demo-note">启动：<code>npm run test:browser</code>，然后打开 <code>http://127.0.0.1:4001/test/</code>。</p>
+        </section>
+
+        <section class="demo-panel">
+            <h2>演示与冒烟检查</h2>
+            <ul class="imgs">
+                <li><img src="./img/a1.jpg" alt="示例图 1"></li>
+                <li><img src="./img/a2.jpeg" alt="示例图 2"></li>
+                <li><img src="./img/a3.jpeg" alt="示例图 3"></li>
+            </ul>
+            <ul class="demo-checks" data-suite-results></ul>
+        </section>
+    </main>
+
+    <script src="./js/runner.js"></script>
     <script src="../lib/js/xqlight.min.js"></script>
     <script>
-        let opts = {
-            imgCls: '.imgs'
-        }
-        let xqlight = new XqLightBox(opts);
-        console.log(xqlight);
+        (async function () {
+            const suite = XqSuite.create();
+
+            suite.check('共享测试图标已声明', () => !!document.querySelector('link[rel="icon"][href$="icon.svg"]'));
+            suite.check('索引列出全部场景', () => document.querySelectorAll('[data-page-list] a').length === 4);
+            suite.check('构造器已加载', () => typeof window.XqLightBox === 'function');
+
+            const box = new window.XqLightBox({ imgCls: '.imgs' });
+            suite.check('扫描到 3 张图片', () => box.imgList.length === 3, String(box.imgList.length));
+            await suite.checkAsync('图片可解码', () => suite.waitForImage('./img/a3.jpeg'));
+
+            box.showLightBox(2);
+            suite.check('打开第 3 张', () => box.root.querySelector('[data-xqlight="current"]').textContent === '3');
+            box.closeLightBox();
+            suite.check('关闭后状态复位', () => !box.root.classList.contains('active'));
+
+            suite.check('页面没有横向溢出', () => suite.noHorizontalOverflow());
+
+            window.__demoReady = true;
+            suite.finish();
+        })();
     </script>
 </body>
 </html>

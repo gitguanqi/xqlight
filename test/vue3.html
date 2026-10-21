@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xqlight · Vue 3</title>
+    <link rel="icon" type="image/svg+xml" href="./icon.svg">
+    <link rel="stylesheet" href="../lib/css/xqlight.min.css">
+    <link rel="stylesheet" href="./css/demo.css">
+</head>
+<body>
+    <header class="demo-header">
+        <img class="demo-logo" src="./icon.svg" alt="xqlight" width="28" height="28">
+        <nav>
+            <a href="./index.html">索引</a>
+            <a href="./browser.html">Browser / UMD</a>
+            <a href="./esm.html">ESM</a>
+            <a href="./vue2.html">Vue 2</a>
+            <a href="./vue3.html" aria-current="page">Vue 3</a>
+        </nav>
+        <span class="demo-status" data-suite-status data-status="pending" aria-live="polite">PENDING</span>
+    </header>
+
+    <main>
+        <h1>Vue 3 挂载</h1>
+        <p class="demo-lead">Vue 3.4.38（CDN 固定版本）+ 原生构建，复用与 Vue 2 页面相同的 Options API 组件。</p>
+
+        <section class="demo-panel">
+            <h2>演示</h2>
+            <ul class="imgs">
+                <li><img src="./img/a1.jpg" alt="示例图 1"></li>
+                <li><img src="./img/a2.jpeg" alt="示例图 2"></li>
+                <li><img src="./img/a3.jpeg" alt="示例图 3"></li>
+            </ul>
+            <div id="vue-app"></div>
+            <p class="demo-note">同一个组件定义在两个大版本下都能挂载与清理。</p>
+        </section>
+
+        <section class="demo-panel">
+            <h2>检查项</h2>
+            <ul class="demo-checks" data-suite-results></ul>
+        </section>
+    </main>
+
+    <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
+    <script src="./js/runner.js"></script>
+    <script src="./js/vue-demo.js"></script>
+    <script src="../lib/js/xqlight.min.js"></script>
+    <script>
+        (function () {
+            const suite = XqSuite.create();
+            const major = Number(String((window.Vue && window.Vue.version) || '0').split('.')[0]);
+
+            suite.check('Vue 3 CDN 已加载', () => major === 3, String(window.Vue && window.Vue.version));
+            suite.check('原生构造器已加载', () => typeof window.XqLightBox === 'function');
+            if (major !== 3 || typeof window.XqLightBox !== 'function') {
+                suite.finish();
+                return;
+            }
+
+            const demo = window.createXqlightVueDemo(window.Vue, 3);
+            demo.mount();
+
+            suite.check('组件挂载后创建了一个实例', () => demo.instance !== null);
+            suite.check('实例根节点已注入页面', () => demo.instance.root instanceof HTMLElement && document.body.contains(demo.instance.root));
+            suite.check('组件渲染出按钮', () => !!document.querySelector('#vue-app button'));
+
+            demo.instance.showLightBox(1);
+            suite.check('实例可以打开指定图片', () => demo.instance.root.classList.contains('active') &&
+                demo.instance.root.querySelector('[data-xqlight="current"]').textContent === '2');
+
+            const root = demo.instance.root;
+            demo.instance.closeLightBox();
+            demo.unmount();
+            suite.check('unmount 后实例被销毁', () => !document.body.contains(root));
+            suite.check('unmount 后滚动已恢复', () => document.body.style.overflow === '');
+
+            demo.mount();
+            suite.check('重新挂载创建了新实例', () => demo.instance !== null && demo.instance.root !== root);
+            suite.check('演示实例处于可用状态', () => document.body.contains(demo.instance.root));
+
+            window.__demoReady = true;
+            suite.finish();
+        })();
+    </script>
+</body>
+</html>
