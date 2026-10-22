@@ -1,0 +1,128 @@
+# xqlight
+
+A dependency-free image lightbox for browsers: a UMD global for plain HTML, a real ESM/CommonJS
+module, and a Vue 2 / Vue 3 plugin built from the same component. Targets ES2017 (no IE), ships no
+runtime dependencies, `vue` is an optional peer.
+
+## Install
+
+```sh
+npm install xqlight
+```
+
+CDN (also needs the stylesheet):
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/xqlight@0.6.0/lib/css/xqlight.min.css">
+<script src="https://unpkg.com/xqlight@0.6.0/lib/js/xqlight.min.js"></script>
+```
+
+## Imports
+
+```js
+import XqLightBox from 'xqlight';                                  // ESM default export
+import XqLightBox, { clampScale, wrapIndex } from 'xqlight';        // named helpers
+const XqLightBox = require('xqlight');                             // CommonJS / UMD
+import xqlight from 'xqlight/vue';                                 // Vue plugin (imports the CSS for you)
+import XqLightbox from 'xqlight/lib/vue/index.vue';                // raw SFC (import the CSS yourself)
+import 'xqlight/lib/css/xqlight.css';                              // 'xqlight/css/*' and 'xqlight/lib/*' are exported too
+```
+
+With a `<script>` tag the constructor is `window.XqLightBox`. `xqlight/vue` is an ESM-only subpath
+(no `require` condition).
+
+## Exported API
+
+- `new XqLightBox(options?)` — mounts immediately (the constructor runs `init()`). Never throws: a
+  missing or unusable `imgCls` logs a warning and leaves the list empty.
+- `XqLightBox.version` — version string.
+- `XqLightBox.utils` — the same helpers as the named exports, also available on the UMD global.
+- Named exports: `XqLightBox`, `ZOOM_STEP` (0.2), `ZOOM_MIN` (0.4), `ZOOM_MAX` (3), `WHEEL_UNIT`
+  (50), `WHEEL_IDLE` (400), `KEY_ACTIONS`, `clampScale`, `wrapIndex`, `parseFileName`,
+  `buildFileName`, `buildTransform`, `normalizeRotation`, `accumulateWheel`, `collectFocusables`,
+  `focusTrapStep`, `clampPan`, `preloadImages`, `lockScroll`, `unlockScroll`, `downloadImage`,
+  `toggleFullscreen`, `exitFullscreen`.
+- Vue plugin default export: `{ install(app) }`, which registers the component as `xqLightbox`
+  (write `<xq-lightbox>` in templates). It also does a named export of `lightboxComponent`.
+
+Instance methods return `this` for chaining unless noted:
+
+- `showLightBox(index)` — open at `index`; out-of-range values wrap. `closeLightBox()` closes and
+  restores page scrolling and the previously focused element.
+- `prevImg()` / `nextImg()` — one step, wrapping at both ends. `goTo(index)` jumps and resets zoom,
+  pan and rotation.
+- `zoom(direction)` — `1` in, `-1` out, one `ZOOM_STEP` each. `setScale(value)` sets it directly,
+  clamped to 0.4–3; returning to 1 resets pan. `toggleZoom()` switches 1× ↔ 2×.
+- `rotate(step?)` — 90° clockwise by default (0 → 90 → 180 → 270 → 0), negative goes
+  counter-clockwise, pan resets, rotation resets on image change.
+- `scaleImg()` — toggles fullscreen on the lightbox root (not the page).
+- `downloadImg(url?, name?)` — downloads the current or given image, `Promise<boolean>`.
+- `refresh()` — re-scans the gallery after the DOM changed. `destroy()` — unbinds everything,
+  removes the nodes, idempotent.
+- Readable state: `imgCls`, `thumbnails`, `imgList`, `currentImgIndex`, `currentScale`,
+  `currentX`, `currentY`, `currentRotation`, `isScale`, `isOpen`, `status`
+  (`'idle' | 'loading' | 'loaded' | 'error'`), `root`.
+
+## Key Options
+
+- `imgCls` (string, required): selector of the gallery container. Images are found with
+  `imgCls + ' img'` resolved against the whole document, so give each gallery its own selector.
+- `thumbnails` (`true | false | 'auto'`, default `'auto'`): thumbnail strip; `'auto'` shows it for
+  2–20 images.
+- Per-image markers read during the scan: `src` (required), `alt` or `data-name` (caption,
+  defaults to `img<index+1>`), `data-thumb` (smaller thumbnail URL).
+
+Vue component props: `lightTitle`, `showLightBox`, `lightImgs`, `currentUrl`, `currentIndex`,
+`currentText`, `thumbnails`. Events: `hideLightBox`, `update:currentIndex`, `update:currentUrl`,
+`change` (`{ index, item }`).
+
+## Typical Use
+
+```html
+<link rel="stylesheet" href="./node_modules/xqlight/lib/css/xqlight.css">
+<ul class="imgs">
+    <li><img src="./a1.jpg" alt="First photo" data-thumb="./t1.jpg"></li>
+    <li><img src="./a2.jpg" alt="Second photo"></li>
+</ul>
+
+<script type="module">
+    import XqLightBox from 'xqlight';
+    const lightbox = new XqLightBox({ imgCls: '.imgs' });
+    // after injecting more <img> into .imgs:
+    lightbox.refresh();
+</script>
+```
+
+```js
+// Vue 3 (Vue 2: Vue.use(xqlight)) — the same component serves both
+import { createApp } from 'vue';
+import xqlight from 'xqlight/vue';
+createApp(App).use(xqlight).mount('#app');
+```
+
+```vue
+<xq-lightbox
+    :show-light-box="visible"
+    :light-imgs="[{ src: '/a1.jpg', name: 'First' }]"
+    :current-index="index"
+    light-title="Preview"
+    @hide-light-box="visible = false"
+    @update:current-index="index = $event"
+/>
+```
+
+## Constraints
+
+- Load the stylesheet. The component ships no inline styles, and visibility is the CSS contract
+  `.lightbox { display: none }` / `.lightbox.active { display: flex }` — never use `v-show` on it.
+- The gallery is scanned when the DOM is ready. Call `refresh()` after adding images;
+  `destroy()` when the host view goes away. One instance owns one DOM subtree, so multiple
+  instances per page are safe (the scroll lock is reference-counted across them).
+- Creating an instance touches `document`/`window`: construct in the browser (`mounted`,
+  `onMounted`, `DOMContentLoaded`), not during SSR.
+- Keyboard while open: `Esc` close, `←`/`→` step, `Home`/`End` first/last, `+`/`-` zoom,
+  `R` rotate, `Tab` cycles inside the lightbox. The wheel zooms and never scrolls the page behind.
+- Rotation keeps the zoom level but zeroes the pan, and a rotated image may exceed the viewport —
+  zoom out after rotating.
+- `downloadImg` fetches the bytes for a native save; when the image is cross-origin without CORS
+  the promise resolves through a direct-open fallback instead of failing.

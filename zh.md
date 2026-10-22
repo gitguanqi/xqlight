@@ -231,6 +231,13 @@ import 'xqlight/lib/css/xqlight.css';
 
 Chrome / Edge / Firefox / Safari 的当前版本与上一大版本。构建目标为 ES2017，不支持 IE。
 
+## 给 AI 代理的元数据
+
+`llms.txt` 是给代理读的紧凑 API 摘要。`skills/xqlight-lightbox/` 是对摘要说不清的部分的集成
+技能：选哪个入口、Vue 侧的接入顺序、`refresh` / `destroy` 的生命周期、以及优先排查的失效
+场景；精确签名在 `skills/xqlight-lightbox/references/api.md`。两者都会打进 npm 包，并通过
+`package.json` 的 `llms` 与 `agents` 字段指向。
+
 ## 开发
 
 ```bash

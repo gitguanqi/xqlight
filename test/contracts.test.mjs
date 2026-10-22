@@ -192,3 +192,89 @@ test('文档覆盖两条消费路径与 Vue 子路径', () => {
         assert.match(text, /update:currentIndex|xq-light-box|:light-imgs/, doc + ' 未给出可用的组件示例');
     }
 });
+
+// —— 代理元数据（llms.txt / skills）——
+// 这几条只校验"元数据指向真实文件、且描述的是真实接口"，不解释文档措辞。
+
+/** 去掉 ./ 前缀，统一成仓库内相对路径 */
+const relative = (target) => String(target).replace(/^\.\//, '');
+
+test('代理元数据指向真实文件并进入发布白名单', () => {
+    assert.equal(pkg.llms, './llms.txt', 'package.json 缺少 llms 字段');
+    assert.match(String(pkg.agents || ''), /^\.\/skills\/[\w-]+\/SKILL\.md$/, 'agents 必须指向包内技能入口');
+
+    for (const field of ['llms', 'agents']) {
+        const target = relative(pkg[field]);
+        assert.ok(existsSync(path.join(repo, target)), field + ' 指向的文件不存在: ' + target);
+        assert.ok(statSync(path.join(repo, target)).isFile(), field + ' 必须指向文件: ' + target);
+    }
+
+    assert.ok(pkg.files.includes('llms.txt'), 'llms.txt 需要进入 files 白名单');
+    assert.ok(pkg.files.includes('skills'), 'skills 目录需要进入 files 白名单');
+});
+
+test('llms.txt 覆盖全部公开导出、实例方法与 Vue 接口', () => {
+    const text = read('llms.txt');
+    assert.ok(!/\bTODO\b|\bTBD\b|待补/.test(text), 'llms.txt 里留有占位内容');
+
+    // 具名导出以 ESM 产物的 export 块为准
+    const esm = read('lib/js/xqlight.esm.mjs');
+    const start = esm.lastIndexOf('export {');
+    const block = esm.slice(start, esm.indexOf('};', start));
+    const names = [...block.matchAll(/^\s{4}([A-Za-z_$][\w$]*),?$/gm)].map((match) => match[1]);
+    assert.ok(names.length > 20, '未能从 ESM 产物解析出具名导出');
+    for (const name of names) {
+        assert.ok(text.includes(name), 'llms.txt 未记录具名导出: ' + name);
+    }
+
+    // 文档里点名的实例方法必须真的挂在原型上
+    const source = read('lib/js/xqlight.js');
+    const publicMethods = [
+        'showLightBox', 'closeLightBox', 'prevImg', 'nextImg', 'goTo', 'zoom',
+        'setScale', 'toggleZoom', 'rotate', 'scaleImg', 'downloadImg', 'refresh', 'destroy'
+    ];
+    for (const name of publicMethods) {
+        assert.ok(new RegExp('XqLightBox\\.prototype\\.' + name + ' = function').test(source), '源码缺少方法: ' + name);
+        assert.ok(text.includes(name + '('), 'llms.txt 未记录方法: ' + name);
+    }
+
+    // 两个入口与 Vue 契约
+    for (const token of ['xqlight/vue', 'imgCls', 'thumbnails', 'lib/css/xqlight.css']) {
+        assert.ok(text.includes(token), 'llms.txt 未记录入口/选项: ' + token);
+    }
+    for (const prop of ['lightTitle', 'showLightBox', 'lightImgs', 'currentIndex', 'currentText']) {
+        assert.ok(text.includes(prop), 'llms.txt 未记录组件 prop: ' + prop);
+    }
+    for (const event of ['hideLightBox', 'update:currentIndex', 'change']) {
+        assert.ok(text.includes(event), 'llms.txt 未记录组件事件: ' + event);
+    }
+});
+
+test('技能入口的 frontmatter 与引用都成立', () => {
+    const skillPath = relative(pkg.agents);
+    const skillDir = path.dirname(path.join(repo, skillPath));
+    const text = read(skillPath);
+
+    const front = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/.exec(text);
+    assert.ok(front, 'SKILL.md 缺少 YAML frontmatter');
+    const name = /^name:\s*(\S+)\s*$/m.exec(front[1]);
+    const description = /^description:\s*(.+)$/m.exec(front[1]);
+    assert.ok(name, 'frontmatter 缺少 name');
+    assert.match(name[1], /^[a-z0-9]+(-[a-z0-9]+)*$/, 'name 必须是全小写连字符形式');
+    assert.equal(name[1], path.basename(skillDir), 'name 应与技能目录一致');
+    assert.ok(description && description[1].length >= 40, 'description 需要说明能力与加载时机');
+
+    assert.ok(!/\bTODO\b|\bTBD\b|待补/.test(text), 'SKILL.md 里留有占位内容');
+    assert.ok(text.includes('references/api.md'), '技能入口未链接 references/api.md');
+
+    // 技能内引用的每个相对路径都必须随技能一起发布
+    const links = [...text.matchAll(/\]\((\.[^)\s]+)\)/g)].map((match) => match[1]);
+    assert.ok(links.length > 0, 'SKILL.md 没有任何相对引用');
+    for (const link of links) {
+        const target = path.resolve(skillDir, link.split('#')[0]);
+        assert.ok(target.startsWith(skillDir), '技能引用不能指向技能目录之外: ' + link);
+        assert.ok(existsSync(target), '技能引用的文件不存在: ' + link);
+    }
+    assert.ok(existsSync(path.join(skillDir, 'references', 'api.md')), '缺少 references/api.md');
+});
+

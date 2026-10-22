@@ -244,6 +244,14 @@ no CSS variables required.
 Chrome / Edge / Firefox / Safari, current and previous major versions. The build
 targets ES2017; IE is not supported.
 
+## Agent metadata
+
+`llms.txt` is the compact API reference an agent should read first. `skills/xqlight-lightbox/`
+is an integration skill for the parts a summary cannot carry: which entry to use, the Vue wiring
+order, refresh/destroy lifecycle, and the failure modes worth checking first. Exact signatures live
+in `skills/xqlight-lightbox/references/api.md`. Both files ship in the npm tarball and are wired
+through the `llms` and `agents` fields in `package.json`.
+
 ## Development
 
 ```bash
