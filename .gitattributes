@@ -1,0 +1,2 @@
+# Husky hooks are shell scripts; CRLF breaks them on Windows checkouts.
+.husky/* text eol=lf

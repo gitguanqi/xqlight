@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.6.0
+
+### 新增
+
+- **给 AI 代理的元数据**：新增根 `llms.txt`（公开 API 摘要：入口、构造参数、实例方法、纯函数、
+  Vue props / events 与关键约束）与 `skills/xqlight-lightbox/`（集成技能：入口选型、Vue 接入
+  顺序、生命周期、失效排查，精确签名在 `references/api.md`）。`package.json` 增加 `llms` /
+  `agents` 字段指向它们，并把 `llms.txt`、`skills` 加入 `files` 白名单。
+- **元数据契约测试**：`test/contracts.test.mjs` 新增 3 条用例，校验 `llms` / `agents` 指向真实
+  文件、`llms.txt` 覆盖 ESM 全部具名导出与真实原型方法、技能 frontmatter 合规且相对引用
+  都在技能目录内。
+
+运行时入口、`exports`、构建产物与包体积语义均未改动；`npm run build:check` 仍为 in sync。
+
+### 开发
+
+- **提交工具链**：引入 commitlint（`@commitlint/config-conventional` + 11 种 type 白名单）、
+  Husky 9 钩子（`pre-commit` 跑 lint-staged，`commit-msg` 跑 commitlint）与 lint-staged。
+  仓库目前没有 linter，lint-staged 规则暂留空占位，后续接入 eslint/biome 后只需改
+  `lint-staged.config.mjs`。仅影响本地提交，不影响包内容。
+
 ## 0.5.0
 
 本次发布不出新依赖、不改入口语义，只把灯箱的观感与常用交互补齐：样式从"能看"打磨到"够精致"，

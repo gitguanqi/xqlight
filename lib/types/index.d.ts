@@ -1,5 +1,5 @@
 /**
- * xqlight v0.5.0 — 类型声明
+ * xqlight v0.6.0 — 类型声明
  * 由 lib/js/xqlight.js 的公共接口手工维护，随包一起提交。
  */
 

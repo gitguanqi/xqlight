@@ -1,6 +1,6 @@
 {
     "name": "xqlight",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "description": "A dependency-free image lightbox for the browser, with a Vue 2/3 wrapper.",
     "main": "./lib/js/xqlight.js",
     "module": "./lib/js/xqlight.esm.mjs",
@@ -26,11 +26,15 @@
     },
     "files": [
         "lib",
+        "skills",
+        "llms.txt",
         "README.md",
         "zh.md",
         "CHANGELOG.md",
         "LICENSE"
     ],
+    "llms": "./llms.txt",
+    "agents": "./skills/xqlight-lightbox/SKILL.md",
     "sideEffects": [
         "*.css",
         "./lib/css/*"
@@ -41,7 +45,9 @@
         "test": "node --test test/core.test.mjs test/contracts.test.mjs",
         "verify": "node scripts/dom-behavior-harness.mjs --entry lib/js/xqlight.min.js --scenario all",
         "test:browser": "node scripts/serve.mjs",
-        "prepublishOnly": "npm run build && npm test && npm run verify"
+        "prepublishOnly": "npm run build && npm test && npm run verify",
+        "commitlint": "commitlint --edit",
+        "prepare": "husky"
     },
     "peerDependencies": {
         "vue": ">=2.6.0 || >=3.0.0"
@@ -73,6 +79,10 @@
     },
     "homepage": "https://github.com/gitguanqi/xqlight#readme",
     "devDependencies": {
-        "esbuild": "^0.28.2"
+        "@commitlint/cli": "^21.2.4",
+        "@commitlint/config-conventional": "^21.2.4",
+        "esbuild": "^0.28.2",
+        "husky": "^9.1.7",
+        "lint-staged": "^17.6.0"
     }
 }
